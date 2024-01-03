@@ -2,10 +2,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "Bash-Debug (select script from list of sh files)",
+            "cwd": "${workspaceFolder}",
+            "program": "${command:SelectScriptName}",
+            "args": []
+        },
+        {
             "name": "(gdb) traffic_server",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/${env:ATS_VSCODE_BUILDDIR}/src/traffic_server/.libs/traffic_server",
+            "program": "${workspaceFolder}/build/src/traffic_server/traffic_server",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -50,7 +50,8 @@
                 "${workspaceFolder}/build/include",
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/lib",
-                "${workspaceFolder}/lib/yamlcpp/include"
+                "${workspaceFolder}/lib/yamlcpp/include",
+                "${workspaceFolder}/lib/swoc/include"
             ],
             "defines": [],
             "intelliSenseMode": "${default}",
