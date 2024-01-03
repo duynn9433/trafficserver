@@ -56,6 +56,8 @@ struct config {
   int pristine_url_flag;
   char *sig_anchor;
   bool ignore_expiry;
+  char rewrite_extension[MAX_EXT_NUM][MAX_EXT_LEN]; //list extension for rewrite add token
+  char query_param[MAX_QUERY_PARAM_NUM][MAX_QUERY_PARAM_LEN]; //list query param for hash
 };
 
 static void
@@ -64,7 +66,6 @@ free_cfg(struct config *cfg)
   Dbg(dbg_ctl, "Cleaning up");
   TSfree(cfg->err_url);
   TSfree(cfg->sig_anchor);
-
   if (cfg->regex_extra) {
 #ifndef PCRE_STUDY_JIT_COMPILE
     pcre_free(cfg->regex_extra);
@@ -80,6 +81,19 @@ free_cfg(struct config *cfg)
   TSfree(cfg);
 }
 
+// trim string
+static void trim(char *str)
+{
+  char *p = str;
+  int len = strlen(p);
+
+  while(isspace(p[len - 1])) p[--len] = 0; //trim end
+  while(*p && isspace(*p)) ++p, --len;//trim start
+
+  memmove(str, p, len + 1);
+}
+
+//Check if the plugin is compatible with the running version of Traffic Server
 TSReturnCode
 TSRemapInit(TSRemapInterface *api_info, char *errbuf, int errbuf_size)
 {
@@ -226,7 +240,39 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
         cfg->pristine_url_flag = 1;
         Dbg(dbg_ctl, "Pristine URLs (from config) will be used");
       }
-    } else {
+    } else if (strncmp(line, CONFIG_REWRITE_EXTENSION, 17) == 0){
+      //first element
+      char *iValue = strtok(value, ",");
+      int i = 0;
+      //process
+      while(iValue != NULL) {
+        Dbg(dbg_ctl, "rewrite_extension %d: %s", i, iValue);
+        trim(iValue);
+        snprintf(&cfg->rewrite_extension[i][0], MAX_EXT_LEN, "%s", iValue);
+        //get next value
+        i++;
+        iValue = strtok(NULL, ",");
+      }
+      Dbg(dbg_ctl, "rewrite_extension count: %d", i);
+
+
+    } else if (strncmp(line, CONFIG_QUERY_PARAM, 11) == 0){
+      //first element
+      char *iValue = strtok(value, ",");
+      int i = 0;
+      //process
+      while(iValue != NULL) {
+        Dbg(dbg_ctl, "query_param %d: %s", i, iValue);
+        trim(iValue);
+        snprintf(&cfg->query_param[i][0], MAX_QUERY_PARAM_LEN, "%s", iValue);
+        //get next value
+        i++;
+        iValue = strtok(NULL, ",");
+      }
+      Dbg(dbg_ctl, "query_param count: %d", i);
+
+    }
+    else {
       TSError("[url_sig] Error parsing line %d of file %s (%s)", line_no, config_file, line);
     }
   }
@@ -289,6 +335,7 @@ err_log(const char *url, int url_len, const char *msg)
   }
 }
 
+//TODO: add support custom query param
 // See the README.  All Signing parameters must be concatenated to the end
 // of the url and any application query parameters.
 static char *
@@ -790,7 +837,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
               }
               part = strtok_r(nullptr, "/", &strtok_r_p);
             }
-
+            //TODO: add support custom query param
             // chop off the last /, replace with '?' or ';' as appropriate.
             has_path_params == false ? (signed_part[strlen(signed_part) - 1] = '?') : (signed_part[strlen(signed_part) - 1] = '\0');
             cp = strstr(query, SIG_QSTRING "=");
