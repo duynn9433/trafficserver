@@ -56,8 +56,8 @@ struct config {
   int pristine_url_flag;
   char *sig_anchor;
   bool ignore_expiry;
-  char rewrite_extension[MAX_EXT_NUM][MAX_EXT_LEN];           // list extension for rewrite add token
-  char hash_query_param[MAX_QUERY_PARAM_NUM][MAX_QUERY_PARAM_LEN]; // list query param for hash
+  char rewrite_extension[MAX_EXT_NUM][MAX_EXT_LEN];                 // list extension for rewrite add token
+  char hash_query_param[MAX_QUERY_PARAM_NUM][MAX_QUERY_PARAM_LEN];  // list query param for hash
   char remap_query_param[MAX_QUERY_PARAM_NUM][MAX_QUERY_PARAM_LEN]; // list query param for remap
 };
 
@@ -289,8 +289,7 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
       }
       Dbg(dbg_ctl, "remap_query_param count: %d", i);
 
-    }
-     else {
+    } else {
       TSError("[url_sig] Error parsing line %d of file %s (%s)", line_no, config_file, line);
     }
   }
@@ -610,6 +609,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
   bool has_path_params = false;
 
   /* all strings are locally allocated except url... about 25k per instance */
+  //TODO: check rewrite_extension
   char *const current_url = TSUrlStringGet(rri->requestBufp, rri->requestUrl, &current_url_len);
   char *url               = current_url;
   char path_params[8192] = {'\0'}, new_path[8192] = {'\0'};
@@ -817,8 +817,11 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
             cp        += strlen(SIG_QSTRING) + 1;
             signature  = cp;
             if ((algorithm == USIG_HMAC_SHA1 && strlen(signature) < SHA1_SIG_SIZE) ||
-                (algorithm == USIG_HMAC_MD5 && strlen(signature) < MD5_SIG_SIZE)) {
-              err_log(url, url_len, "Signature query string too short (< 20)");
+                (algorithm == USIG_HMAC_MD5 && strlen(signature) < MD5_SIG_SIZE)   ||
+                (algorithm == USIG_HMAC_SHA256 && strlen(signature) < SHA256_SIG_SIZE)   ||
+                (algorithm == USIG_HMAC_SHA384 && strlen(signature) < SHA384_SIG_SIZE)   ||
+                (algorithm == USIG_HMAC_SHA512 && strlen(signature) < SHA512_SIG_SIZE)   ) {
+              err_log(url, url_len, "Signature query string too short");
               goto deny;
             }
           } else {
@@ -838,6 +841,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
             goto deny;
           }
           skip += 3;
+          // skip = host + path in case not use siganchor
           memcpy(urltokstr, skip, cp - skip);
 
           // Block needed due to goto.
@@ -855,13 +859,32 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
               }
               part = strtok_r(nullptr, "/", &strtok_r_p);
             }
-            // TODO: add support custom query param
             //  chop off the last /, replace with '?' or ';' as appropriate.
-            has_path_params == false ? (signed_part[strlen(signed_part) - 1] = '?') : (signed_part[strlen(signed_part) - 1] = '\0');
-            cp = strstr(query, SIG_QSTRING "=");
-            Dbg(dbg_ctl, "cp: %s, query: %s, signed_part: %s", cp, query, signed_part);
-            strncat(signed_part, query, (cp - query) + strlen(SIG_QSTRING) + 1);
-
+            if(has_path_params){
+              (signed_part[strlen(signed_part) - 1] = '\0');
+            } else {
+               (signed_part[strlen(signed_part) - 1] = '?');
+            }
+            //add hash query param to signed_part
+            for (int i=0; i < MAX_QUERY_PARAM_NUM; i++) {
+              if (cfg->hash_query_param[i][0] != '\0') {
+                char *query_param = strstr(url, cfg->hash_query_param[i]);
+                char *end_query_param = strstr(query_param, "&");
+                if (query_param != nullptr) {
+                  query_param += strlen(cfg->hash_query_param[i]) + 1;
+                  strncat(signed_part, cfg->hash_query_param[i], sizeof(signed_part) - strlen(signed_part) - 1);
+                  strncat(signed_part, "=", sizeof(signed_part) - strlen(signed_part) - 1);
+                  strncat(signed_part, query_param, (end_query_param - query_param));
+                  strncat(signed_part, "&", sizeof(signed_part) - strlen(signed_part) - 1);
+                }
+                Dbg(dbg_ctl, "Add query \"%s\" Signed string=\"%s\"", cfg->hash_query_param[i], signed_part);
+              }
+              else{
+                break;  // break if no more query param
+              }
+            }
+            //remove last & or ?
+            signed_part[strlen(signed_part) - 1] = '\0';
             Dbg(dbg_ctl, "Signed string=\"%s\"", signed_part);
 
             /* calculate the expected the signature with the right algorithm */
