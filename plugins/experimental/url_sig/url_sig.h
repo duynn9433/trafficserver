@@ -32,7 +32,8 @@
 
 /*Value for rewrite extension and query param in config file*/
 #define CONFIG_REWRITE_EXTENSION "rewrite_extension"
-#define CONFIG_QUERY_PARAM       "query_param"
+#define CONFIG_HASH_QUERY_PARAM  "hash_query_param"
+#define CONFIG_REMAP_QUERY_PARAM "remap_query_param"
 
 #define CIP_STRLEN   20
 #define EXP_STRLEN   16
@@ -42,12 +43,12 @@
 
 #define MAX_HTTP_REQUEST_SIZE 8192 //
 
-#define MAX_SIG_SIZE  64 //update max size
-#define SHA1_SIG_SIZE 20
-#define SHA256_SIG_SIZE 32 //size for sha256
-#define SHA384_SIG_SIZE 48 //size for sha384
-#define SHA512_SIG_SIZE 64 //size for sha512
-#define MD5_SIG_SIZE  16
+#define MAX_SIG_SIZE    64 // update max size
+#define SHA1_SIG_SIZE   20
+#define SHA256_SIG_SIZE 32 // size for sha256
+#define SHA384_SIG_SIZE 48 // size for sha384
+#define SHA512_SIG_SIZE 64 // size for sha512
+#define MD5_SIG_SIZE    16
 
 #define MAX_REQ_LEN   8192
 #define MAX_KEY_LEN   256
@@ -56,12 +57,12 @@
 /*Limit for rewrite_extension like: m3u8*/
 #define MAX_EXT_LEN 16
 #define MAX_EXT_NUM 5
-/*Limit for list hash query_param*/
+/*Limit for list hash hash_query_param*/
 #define MAX_QUERY_PARAM_LEN 16
 #define MAX_QUERY_PARAM_NUM 5
 
-#define USIG_HMAC_SHA1 1
-#define USIG_HMAC_MD5  2
-#define USIG_HMAC_SHA256 3 //for sha256
-#define USIG_HMAC_SHA384 4 //for sha384
-#define USIG_HMAC_SHA512 5 //for sha512
+#define USIG_HMAC_SHA1   1
+#define USIG_HMAC_MD5    2
+#define USIG_HMAC_SHA256 3 // for sha256
+#define USIG_HMAC_SHA384 4 // for sha384
+#define USIG_HMAC_SHA512 5 // for sha512
