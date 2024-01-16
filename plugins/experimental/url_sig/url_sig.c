@@ -336,7 +336,7 @@ getAppQueryString(const char *query_string, int query_length)
   TSDebug(PLUGIN_NAME, "query_string: %s, query_length: %d", query_string, query_length);
   /*----------remove token---------*/ 
   //TODO: split to func if need to remove more
-   char param[] = SIG_QSTRING"=";
+  char param[] = SIG_QSTRING"=";
   param_start = strstr(param_start, param);
   if(param_start != NULL) {
     //get end param 
