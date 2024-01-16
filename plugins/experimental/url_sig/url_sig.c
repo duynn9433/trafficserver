@@ -316,51 +316,44 @@ err_log(const char *url, const char *msg)
 
 // See the README.  All Signing parameters must be concatenated to the end
 // of the url and any application query parameters.
+// remove query param for url_sig plugin (not use for another purpose)
 static char *
 getAppQueryString(const char *query_string, int query_length)
 {
   int done = 0;
-  char *p;
-  char buf[MAX_QUERY_LEN + 1];
+  char *param_start, *param_end;
+  char buf[MAX_QUERY_LEN + 10];
 
   if (query_length > MAX_QUERY_LEN) {
-    TSDebug(PLUGIN_NAME, "Cannot process the query string as the length exceeds %d bytes", MAX_QUERY_LEN);
+    TSError(PLUGIN_NAME, "Cannot process the query string as the length exceeds %d bytes", MAX_QUERY_LEN);
     return NULL;
   }
   memset(buf, 0, sizeof(buf));
   memcpy(buf, query_string, query_length);
-  p = buf;
+  param_start = buf;
+  param_end = buf;
 
   TSDebug(PLUGIN_NAME, "query_string: %s, query_length: %d", query_string, query_length);
-  char result[MAX_QUERY_LEN];
-  int index = 0;
-
-  do {
-    if (*p != '\0' && *p == 't' && *(p + 1) == 'o' && *(p + 2) == 'k' && *(p + 3) == 'e' && *(p + 4) == 'n') {
-      // TODO: Verify case tokenizer=abc&token=bcd 
-      done = 1;
-      char* delimeter = strchr(p, '&');
-      TSDebug(PLUGIN_NAME, "Delimeter %s", delimeter);
-      TSDebug(PLUGIN_NAME, "P %s", p);
-      if (delimeter != NULL) {
-        delimeter++;
-        strcat(result, delimeter);
-      } else {
-        *(p - 1) = '\0';
-        index--;
-        result[index] = '\0';
-      }        
+  /*----------remove token---------*/ 
+  //TODO: split to func if need to remove more
+   char param[] = SIG_QSTRING"=";
+  param_start = strstr(param_start, param);
+  if(param_start != NULL) {
+    //get end param 
+    param_end = strchr(param_start, '&');
+    if(param_end != NULL) {
+      param_end = param_end + 1;
+      int end_len = strlen(param_end);
+      param_start[end_len] = '\0';
+      memmove(param_start, param_end, end_len);
     } else {
-      result[index] = *(p);
-      p++;
-      index++;
+      *(param_start - 1) ='\0';
     }
-  } while (!done);
+  }
 
-  TSDebug(PLUGIN_NAME, "Result %s", result);
-  if (strlen(result) > 0) {
-    p = TSstrdup(result);
-    return p;
+  if (strlen(buf) > 0) {
+    param_start = TSstrdup(buf);
+    return param_start;
   } else {
     return NULL;
   }

@@ -51,3 +51,6 @@
 
 #define USIG_HMAC_SHA1 1
 #define USIG_HMAC_MD5 2
+
+
+#define PATH_MAX        4096
