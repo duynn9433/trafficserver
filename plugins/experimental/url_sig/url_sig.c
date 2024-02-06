@@ -41,6 +41,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "hls_add_token.h"
+
 #ifdef HAVE_PCRE_PCRE_H
 #include <pcre/pcre.h>
 #else
@@ -334,12 +336,12 @@ getAppQueryString(const char *query_string, int query_length)
   param_end = buf;
 
   TSDebug(PLUGIN_NAME, "query_string: %s, query_length: %d", query_string, query_length);
-  /*----------remove token---------*/ 
+  /*----------remove token---------*/
   //TODO: split to func if need to remove more
   char param[] = SIG_QSTRING"=";
   param_start = strstr(param_start, param);
   if(param_start != NULL) {
-    //get end param 
+    //get end param
     param_end = strchr(param_start, '&');
     if(param_end != NULL) {
       param_end = param_end + 1;
