@@ -17,6 +17,4 @@
 pkglib_LTLIBRARIES += experimental/url_sig/url_sig.la
 
 experimental_url_sig_url_sig_la_SOURCES = \
-  experimental/url_sig/url_sig.c \
-  experimental/url_sig/hls_add_token.c \
-  experimental/url_sig/str_builder.c
+  experimental/url_sig/url_sig.c 

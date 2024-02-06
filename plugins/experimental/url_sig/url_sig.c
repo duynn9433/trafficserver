@@ -41,8 +41,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "hls_add_token.h"
-
 #ifdef HAVE_PCRE_PCRE_H
 #include <pcre/pcre.h>
 #else

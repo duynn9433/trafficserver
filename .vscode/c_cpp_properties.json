@@ -87,7 +87,9 @@
                 "${workspaceFolder}/proxy/logging",
                 "${workspaceFolder}/proxy/private",
                 "${workspaceFolder}/proxy/shared",
-                "${workspaceFolder}/proxy/http/remap"
+                "${workspaceFolder}/proxy/http/remap",
+                "/usr/local/include",
+                "/usr/include/ffmpeg"
             ],
             "defines": [],
             "intelliSenseMode": "${default}",

@@ -16,7 +16,7 @@
 
 TSXS?=tsxs
 
-all:	url_sig.c hls_add_token.c str_builder.c
+all:	url_sig.c
 	$(TSXS) -v -o url_sig.so $?
 
 install:

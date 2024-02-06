@@ -48,18 +48,18 @@
 #define ASSERT_SUCCESS(_x) TSAssert((_x) == TS_SUCCESS)
 
 typedef struct {
-  TSVIO output_vio;
-  TSIOBuffer output_buffer;
-  TSIOBufferReader output_reader;
-  int append_needed;
+  TSVIO output_vio; //handle I/O operations
+  TSIOBuffer output_buffer; //store data being written to the output connection
+  TSIOBufferReader output_reader;//read data from the output buffer
+  int append_needed; //flag to indicate if the data needs to be appended
 } MyData;
 
-static TSIOBuffer append_buffer;
-static TSIOBufferReader append_buffer_reader;
-static int append_buffer_length;
+static TSIOBuffer append_buffer;//buffer to store the data to be appended
+static TSIOBufferReader append_buffer_reader;//read data from the append buffer
+static int append_buffer_length;//length of the append buffer
 
 static MyData *
-my_data_alloc()
+my_data_alloc() //allocate memory for the data structure
 {
   MyData *data;
 
@@ -88,8 +88,8 @@ my_data_destroy(MyData *data)
 static void
 handle_transform(TSCont contp)
 {
-  TSVConn output_conn;
-  TSVIO write_vio;
+  TSVConn output_conn;//output connection
+  TSVIO write_vio;//handle I/O operations
   MyData *data;
   int64_t towrite;
 
@@ -99,7 +99,7 @@ handle_transform(TSCont contp)
   /* Get the write VIO for the write operation that was performed on
      ourself. This VIO contains the buffer that we are to read from
      as well as the continuation we are to call when the buffer is
-     empty. */
+     empty. */  
   write_vio = TSVConnWriteVIOGet(contp);
 
   /* Get our data structure for this operation. The private data
@@ -126,7 +126,7 @@ handle_transform(TSCont contp)
      transformation that means we're done. In a more complex
      transformation we might have to finish writing the transformed
      data to our output connection. */
-  if (!TSVIOBufferGet(write_vio)) {
+  if (!TSVIOBufferGet(write_vio)) {//if Null, then we are done
     if (data->append_needed) {
       data->append_needed = 0;
       TSIOBufferCopy(TSVIOBufferGet(data->output_vio), append_buffer_reader, append_buffer_length, 0);
@@ -151,6 +151,18 @@ handle_transform(TSCont contp)
     }
 
     if (towrite > 0) {
+      //print data
+      TSIOBufferBlock block = TSIOBufferReaderStart(TSVIOReaderGet(write_vio));
+      while (block) {
+        int64_t block_size;
+        const char *block_data = TSIOBufferBlockReadStart(block, TSVIOReaderGet(write_vio), &block_size);
+
+        printf("out 2 %.*s", (int)block_size, block_data);
+
+        block = TSIOBufferBlockNext(block);
+      }
+
+
       /* Copy the data from the read buffer to the output buffer. */
       TSIOBufferCopy(TSVIOBufferGet(data->output_vio), TSVIOReaderGet(write_vio), towrite, 0);
 
@@ -183,6 +195,16 @@ handle_transform(TSCont contp)
       data->append_needed = 0;
       TSIOBufferCopy(TSVIOBufferGet(data->output_vio), append_buffer_reader, append_buffer_length, 0);
     }
+          //print data
+      TSIOBufferBlock block = TSIOBufferReaderStart(TSVIOReaderGet(write_vio));
+      while (block) {
+        int64_t block_size;
+        const char *block_data = TSIOBufferBlockReadStart(block, TSVIOReaderGet(write_vio), &block_size);
+
+        printf("out 1 %.*s", (int)block_size, block_data);
+
+        block = TSIOBufferBlockNext(block);
+      }
 
     /* If there is no data left to read, then we modify the output
        VIO to reflect how much data the output connection should
@@ -242,7 +264,7 @@ append_transform(TSCont contp, TSEvent event, void *edata ATS_UNUSED)
 }
 
 static int
-transformable(TSHttpTxn txnp)
+transformable(TSHttpTxn txnp) //check HTTP ok and is html, enough memory...
 {
   TSMBuffer bufp;
   TSMLoc hdr_loc;
@@ -322,12 +344,22 @@ load(const char *filename)
   append_buffer_reader = TSIOBufferReaderAlloc(append_buffer);
 
   for (;;) {
-    TSIOBufferBlock blk = TSIOBufferStart(append_buffer);
+    TSIOBufferBlock blk = TSIOBufferStart(append_buffer);//start read data block
+    TSIOBufferBlock block = TSIOBufferReaderStart(append_buffer_reader);
+    while (block) {
+      int64_t block_size;
+      const char *block_data = TSIOBufferBlockReadStart(block, append_buffer_reader, &block_size);
+
+      // Process or print the block data
+      printf("out 3 %.*s", (int)block_size, block_data);
+
+      block = TSIOBufferBlockNext(block); 
+    }
     char *p             = TSIOBufferBlockWriteStart(blk, &avail);
 
-    int err = TSfread(fp, p, avail);
+    int err = TSfread(fp, p, avail); //read from file, return line length
     if (err > 0) {
-      TSIOBufferProduce(append_buffer, err);
+      TSIOBufferProduce(append_buffer, err);//increase the length of the block
     } else {
       break;
     }
@@ -363,7 +395,7 @@ TSPluginInit(int argc, const char *argv[])
     goto Lerror;
   }
 
-  TSHttpHookAdd(TS_HTTP_READ_RESPONSE_HDR_HOOK, TSContCreate(transform_plugin, NULL));
+  TSHttpHookAdd(TS_HTTP_READ_RESPONSE_HDR_HOOK, TSContCreate(transform_plugin, NULL));//add hook
   return;
 
 Lerror:
