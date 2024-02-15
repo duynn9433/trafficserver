@@ -42,52 +42,8 @@
 #include <stdbool.h>
 #include "hls_add_token.h"
 
-
-#ifdef HAVE_PCRE_PCRE_H
-#include <pcre/pcre.h>
-#else
-#include <pcre.h>
-#endif
-
-#include <ts/ts.h>
 #include <ts/remap.h>
-
-static const char PLUGIN_NAME[] = "url_sig_generate_token";
-
-struct config {
-  TSHttpStatus err_status;
-  char *err_url;
-  char keys[MAX_KEY_NUM][MAX_KEY_LEN];
-  pcre *regex;
-  pcre_extra *regex_extra;
-  int pristine_url_flag;
-  char *sig_anchor;
-  bool ignore_expiry;
-  char hash_query_param[MAX_HASH_QUERY_PARAM_NUM][MAX_HASH_QUERY_LEN];
-  int paramNum;
-};
-
-static void
-free_cfg(struct config *cfg)
-{
-  TSDebug(PLUGIN_NAME, "Cleaning up");
-  TSfree(cfg->err_url);
-  TSfree(cfg->sig_anchor);
-
-  if (cfg->regex_extra) {
-#ifndef PCRE_STUDY_JIT_COMPILE
-    pcre_free(cfg->regex_extra);
-#else
-    pcre_free_study(cfg->regex_extra);
-#endif
-  }
-
-  if (cfg->regex) {
-    pcre_free(cfg->regex);
-  }
-
-  TSfree(cfg);
-}
+#include "url_sig_config.h"
 
 TSReturnCode
 TSRemapInit(TSRemapInterface *api_info, char *errbuf, int errbuf_size)
@@ -356,6 +312,10 @@ static void run(){
     int algorithm = 2;
     char *res = rewrite_m3u8(buffer, schema, host, usePathNoFilename, hashQuery, query, key, algorithm);
     printf("%s", res);
+
+    //test read remap.config
+    readRemapConfig("remap.config");
+
     return 0;
 }
 

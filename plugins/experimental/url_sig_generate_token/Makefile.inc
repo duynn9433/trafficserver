@@ -24,7 +24,9 @@ experimental_url_sig_generate_token_url_sig_generate_token_la_SOURCES = \
   experimental/url_sig_generate_token/hls_add_token.c \
   experimental/url_sig_generate_token/hls_add_token.h \
   experimental/url_sig_generate_token/str_builder.c \
-  experimental/url_sig_generate_token/str_builder.h
+  experimental/url_sig_generate_token/str_builder.h \
+  experimental/url_sig_generate_token/url_sig_config.cpp \
+  experimental/url_sig_generate_token/url_sig_config.h
 
 
 #experimental_url_sig_generate_token_url_sig_generate_token_la_LDFLAGS = \

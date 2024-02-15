@@ -26,7 +26,7 @@
 #define PAR_QSTRING \
   "P" /* P=1110 means use parts 0, 1 and 2 (and no more) for the hashing of the url after removing the 'http://' */
       /* and making the parts by doing a split("/") */
-#define SIG_QSTRING                                                                                           \
+#define SIG_QSTRING \
   "token" /* token=9e2828d570a4bee3c964f698b0985ee58b9f6b64 means 9e2828d570a4bee3c964f698b0985ee58b9f6b64 is the sig \
          This one has to be the last one of the string */
 
@@ -54,3 +54,6 @@
 
 
 #define PATH_MAX        4096
+
+static const char PLUGIN_NAME[] = "url_sig_generate_token";
+#include <ts/ts.h>
