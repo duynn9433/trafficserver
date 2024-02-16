@@ -92,8 +92,8 @@ handle_transform(TSCont contp)
     data->output_buffer = TSIOBufferCreate();
     data->output_reader = TSIOBufferReaderAlloc(data->output_buffer);
     TSDebug(PLUGIN_NAME, "\tWriting %" PRId64 " bytes on VConn", TSVIONBytesGet(input_vio));
-    /* -Initiate a write to the output vconnection of the specified number of bytes. 
-    When the write is initiated, the transformation expects to receive WRITE_READY, WRITE_COMPLETE, 
+    /* -Initiate a write to the output vconnection of the specified number of bytes.
+    When the write is initiated, the transformation expects to receive WRITE_READY, WRITE_COMPLETE,
     or ERROR events from the output vconnection- */
     data->output_vio = TSVConnWrite(output_conn, contp, data->output_reader, INT64_MAX);
     TSContDataSet(contp, data);
@@ -146,7 +146,7 @@ handle_transform(TSCont contp)
       /* Modify the input VIO to reflect how much data we've
        * completed.
        */
-      /* -Modify the input VIO to tell it how much data has been read 
+      /* -Modify the input VIO to tell it how much data has been read
       (increase the value of ndone)- */
       TSVIONDoneSet(input_vio, TSVIONDoneGet(input_vio) + towrite);
     }
@@ -155,11 +155,11 @@ handle_transform(TSCont contp)
   /* Now we check the input VIO to see if there is data left to
    * read.
    */
-  /* -If there is more data left to read ( if ndone < nbytes), 
-  then the handle_transform function wakes up the downstream vconnection with a re-enable 
+  /* -If there is more data left to read ( if ndone < nbytes),
+  then the handle_transform function wakes up the downstream vconnection with a re-enable
   and wakes up the upstream vconnection by sending it WRITE_READY- */
-  /* -The downstream vconnections send WRITE_READY events when they need more data; 
-  when data is available, the upstream vconnections re-enable the downstream vconnections. 
+  /* -The downstream vconnections send WRITE_READY events when they need more data;
+  when data is available, the upstream vconnections re-enable the downstream vconnections.
   In this instance, the TSVIOReenable function sends TS_EVENT_IMMEDIATE.- */
   if (TSVIONTodoGet(input_vio) > 0) {
     if (towrite > 0) {
@@ -182,10 +182,10 @@ handle_transform(TSCont contp)
      * is done reading. We then reenable the output connection so
      * that it can consume the data we just gave it.
      */
-    /* -11.If the handle_transform function finds there is no more data to read, 
-    then it sets nbytes to ndone on the output (downstream) VIO 
-    and wakes up the output vconnection with a re-enable. 
-    It then triggers the end of the write operation from the upstream vconnection 
+    /* -11.If the handle_transform function finds there is no more data to read,
+    then it sets nbytes to ndone on the output (downstream) VIO
+    and wakes up the output vconnection with a re-enable.
+    It then triggers the end of the write operation from the upstream vconnection
     by sending the upstream vconnection a WRITE_COMPLETE event.-*/
     TSVIONBytesSet(data->output_vio, TSVIONDoneGet(input_vio));
     TSVIOReenable(data->output_vio);
@@ -195,7 +195,7 @@ handle_transform(TSCont contp)
      */
     TSContCall(TSVIOContGet(input_vio), TS_EVENT_VCONN_WRITE_COMPLETE, input_vio);
 
-    /* -11.1. When the upstream vconnection receives the WRITE_COMPLETE event, 
+    /* -11.1. When the upstream vconnection receives the WRITE_COMPLETE event,
     it will probably shut down the write operation- */
   }
 }
@@ -230,9 +230,9 @@ null_transform(TSCont contp, TSEvent event, void *edata)
        */
       TSContCall(TSVIOContGet(input_vio), TS_EVENT_ERROR, input_vio);
     } break;
-    /* -12.Similarly, when the downstream vconnection has consumed all of the data, 
-    it sends the transformation a WRITE_COMPLETE event. 
-    The transformation handles this event with a shut down 
+    /* -12.Similarly, when the downstream vconnection has consumed all of the data,
+    it sends the transformation a WRITE_COMPLETE event.
+    The transformation handles this event with a shut down
     (the transformation shuts down the write operation to the downstream vconnection).- */
     case TS_EVENT_VCONN_WRITE_COMPLETE:
       TSDebug(PLUGIN_NAME, "\tEvent is TS_EVENT_VCONN_WRITE_COMPLETE");
@@ -286,9 +286,9 @@ transformable(TSHttpTxn txnp)
   return retv;
 }
 
-/*If the response is transformable, 
-then the plugin creates a transformation vconnection that gets called back 
-when the response data is ready to be transformed 
+/*If the response is transformable,
+then the plugin creates a transformation vconnection that gets called back
+when the response data is ready to be transformed
 (as it is streaming from the origin server).*/
 static void
 transform_add(TSHttpTxn txnp)
@@ -296,7 +296,7 @@ transform_add(TSHttpTxn txnp)
   TSVConn connp;
 
   TSDebug(PLUGIN_NAME, "Entering transform_add()");
-  connp = TSTransformCreate(null_transform, txnp); //null_transform is handle func
+  connp = TSTransformCreate(null_transform, txnp); // null_transform is handle func
   TSHttpTxnHookAdd(txnp, TS_HTTP_RESPONSE_TRANSFORM_HOOK, connp);
 }
 
@@ -336,7 +336,7 @@ TSPluginInit(int argc, const char *argv[])
 
     goto Lerror;
   }
-  //always call transform_plugin func when read response header
+  // always call transform_plugin func when read response header
   TSHttpHookAdd(TS_HTTP_READ_RESPONSE_HDR_HOOK, TSContCreate(transform_plugin, NULL));
   return;
 

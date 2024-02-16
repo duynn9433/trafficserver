@@ -1,0 +1,267 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "libwccp.so"
+		}
+	],
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"CPP_LIB",
+			"include_directories"
+		],
+		"files" : 
+		[
+			"CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 115,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 61,
+				"parent" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 31,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -fPIC"
+				},
+				{
+					"fragment" : "-std=gnu++17"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"define" : "wccp_EXPORTS"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/include"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/tests/include"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/lib"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/lib/yamlcpp/include"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/proxy"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/proxy/hdrs"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/proxy/http"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/proxy/http/remap"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/proxy/shared"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/iocore/eventsystem"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/iocore/net"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/iocore/dns"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/iocore/hostdb"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/iocore/aio"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/iocore/cache"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/iocore/utils"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/mgmt"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/mgmt/api"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/mgmt/utils"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/mgmt/api/include"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/vtn-duynn22/Github/trafficserver/proxy/api"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					2
+				],
+				"standard" : "17"
+			},
+			"sourceIndexes" : 
+			[
+				1,
+				2,
+				5,
+				6,
+				8
+			]
+		}
+	],
+	"id" : "wccp::@6890427a1f51a3e7e1df",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "",
+				"role" : "flags"
+			}
+		],
+		"language" : "CXX"
+	},
+	"name" : "wccp",
+	"nameOnDisk" : "libwccp.so",
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				0,
+				3,
+				4,
+				7
+			]
+		},
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				1,
+				2,
+				5,
+				6,
+				8
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 2,
+			"path" : "include/wccp/Wccp.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 0,
+			"path" : "src/wccp/WccpConfig.cc",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 0,
+			"path" : "src/wccp/WccpEndPoint.cc",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 2,
+			"path" : "src/wccp/WccpLocal.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"path" : "src/wccp/WccpMeta.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 0,
+			"path" : "src/wccp/WccpMsg.cc",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 0,
+			"path" : "src/wccp/WccpStatic.cc",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 2,
+			"path" : "src/wccp/WccpUtil.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"compileGroupIndex" : 0,
+			"path" : "src/wccp/wccp-test-router.cc",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "SHARED_LIBRARY"
+}

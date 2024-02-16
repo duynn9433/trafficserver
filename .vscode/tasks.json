@@ -59,6 +59,13 @@
             "label": "Dump Enviroment Variables",
             "command": "env",
             "problemMatcher": []
+        },
+        {
+            "label": "Build and install",
+            "dependsOn": [
+                "Build",
+                "Install"
+            ]
         }
     ]
 }

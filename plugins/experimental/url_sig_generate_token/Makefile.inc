@@ -20,7 +20,8 @@
 pkglib_LTLIBRARIES += experimental/url_sig_generate_token/url_sig_generate_token.la
 
 experimental_url_sig_generate_token_url_sig_generate_token_la_SOURCES = \
-  experimental/url_sig_generate_token/url_sig_generate_token.c \
+  experimental/url_sig_generate_token/url_sig_generate_token.cc \
+  experimental/url_sig_generate_token/url_sig_generate_token.h \
   experimental/url_sig_generate_token/hls_add_token.c \
   experimental/url_sig_generate_token/hls_add_token.h \
   experimental/url_sig_generate_token/str_builder.c \

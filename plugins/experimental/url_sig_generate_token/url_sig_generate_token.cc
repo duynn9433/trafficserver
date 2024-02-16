@@ -22,9 +22,12 @@
     __typeof__(b) _b = (b); \
     _a < _b ? _a : _b;      \
   })
+#include <map>
+#include <string>
 
-#include "url_sig.h"
-
+extern "C" {
+  #include "url_sig_config.h"
+#include "url_sig_generate_token.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,52 +43,11 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdbool.h>
-
-#ifdef HAVE_PCRE_PCRE_H
-#include <pcre/pcre.h>
-#else
-#include <pcre.h>
-#endif
-
-#include <ts/ts.h>
+#include "hls_add_token.h"
 #include <ts/remap.h>
-
-static const char PLUGIN_NAME[] = "url_sig";
-
-struct config {
-  TSHttpStatus err_status;
-  char *err_url;
-  char keys[MAX_KEY_NUM][MAX_KEY_LEN];
-  pcre *regex;
-  pcre_extra *regex_extra;
-  int pristine_url_flag;
-  char *sig_anchor;
-  bool ignore_expiry;
-  char hash_query_param[MAX_HASH_QUERY_PARAM_NUM][MAX_HASH_QUERY_LEN];
-  int paramNum;
-};
-
-static void
-free_cfg(struct config *cfg)
-{
-  TSDebug(PLUGIN_NAME, "Cleaning up");
-  TSfree(cfg->err_url);
-  TSfree(cfg->sig_anchor);
-
-  if (cfg->regex_extra) {
-#ifndef PCRE_STUDY_JIT_COMPILE
-    pcre_free(cfg->regex_extra);
-#else
-    pcre_free_study(cfg->regex_extra);
-#endif
-  }
-
-  if (cfg->regex) {
-    pcre_free(cfg->regex);
-  }
-
-  TSfree(cfg);
 }
+
+static std::map<std::string, config_t> config_map;
 
 TSReturnCode
 TSRemapInit(TSRemapInterface *api_info, char *errbuf, int errbuf_size)
@@ -102,6 +64,7 @@ TSRemapInit(TSRemapInterface *api_info, char *errbuf, int errbuf_size)
   }
 
   TSDebug(PLUGIN_NAME, "plugin is successfully initialized");
+
   return TS_SUCCESS;
 }
 
@@ -109,8 +72,9 @@ TSRemapInit(TSRemapInterface *api_info, char *errbuf, int errbuf_size)
 TSReturnCode
 TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_size)
 {
-  char config_filepath_buf[PATH_MAX], *config_file;
+  char config_filepath_buf[PATH_MAX], *config_file, remap_config_file_buf[300], *remap_config_file;
   struct config *cfg;
+  const char *tsConfigDir = TSConfigDirGet();
 
   if ((argc < 3) || (argc > 4)) {
     snprintf(errbuf, errbuf_size,
@@ -124,10 +88,18 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
   if (argv[2][0] == '/') {
     config_file = argv[2];
   } else {
-    snprintf(config_filepath_buf, sizeof(config_filepath_buf), "%s/%s", TSConfigDirGet(), argv[2]);
+    snprintf(config_filepath_buf, sizeof(config_filepath_buf), "%s/%s", tsConfigDir, argv[2]);
     config_file = config_filepath_buf;
   }
   TSDebug(PLUGIN_NAME, "config file name: %s", config_file);
+  snprintf(remap_config_file_buf, sizeof(remap_config_file_buf), "%s/%s", tsConfigDir, "remap.config");
+  remap_config_file = remap_config_file_buf;
+  // read file
+  config_map.clear();
+  readRemapConfig(remap_config_file, &config_map);
+
+  //
+
   FILE *file = fopen(config_file, "r");
   if (file == NULL) {
     snprintf(errbuf, errbuf_size, "[TSRemapNewInstance] - Error opening file %s", config_file);
@@ -140,7 +112,7 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
   int paramNum     = 0;
   bool eat_comment = false;
 
-  cfg = TSmalloc(sizeof(struct config));
+  cfg = static_cast<struct config *>(TSmalloc(sizeof(struct config)));
   memset(cfg, 0, sizeof(struct config));
 
   while (fgets(line, sizeof(line), file) != NULL) {
@@ -201,7 +173,7 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
       snprintf(&cfg->keys[keynum][0], MAX_KEY_LEN, "%s", value);
     } else if (strncmp(line, "error_url", 9) == 0) {
       if (atoi(value)) {
-        cfg->err_status = atoi(value);
+        cfg->err_status = static_cast<TSHttpStatus>(atoi(value));
       }
       value += 3;
       while (isspace(*value)) {
@@ -317,9 +289,65 @@ err_log(const char *url, const char *msg)
 // See the README.  All Signing parameters must be concatenated to the end
 // of the url and any application query parameters.
 // remove query param for url_sig plugin (not use for another purpose)
+static void
+log_callback(void *ptr, int level, const char *fmt, va_list vl)
+{
+  char log[1024];
+  vsnprintf(log, 1024, fmt, vl);
+  printf("%s", log);
+}
+static void
+run()
+{
+  char schema[]            = "http";
+  char host[]              = "example.com";
+  char path[]              = "/path/to/playlist.m3u8";
+  char hashQuery[]         = "timestamp=1906277895";
+  char query[]             = "timestamp=1906277895&timeshift=123&a=1&c=2";
+  char usePathNoFilename[] = "/path/to";
+  // The m3u8 data buffer
+  char buffer[] = "#EXTM3U \n"
+                  "#EXT-X-PART:URI=\"hls/5154400_avc1_640028_1920x1080_25_1-695825300_753218.m4s\",DURATION=0.48\n"
+                  "#EXT-X-MAP:URI=\"hls/5154400_avc1_640028_1920x1080_25_1-695825300_753218.m4s\",DURATION=0.48\n"
+                  "#EXT-X-MAP:URI=\"hls/5154400_avc1_640028_1920x1080_25_1-695825300_753218.m4s\"\n"
+                  "## Created with Broadpeak BkS350 Origin Packager  (version=1.12.8-28913) \n"
+                  "# variants \n"
+                  "#EXT-X-VERSION:3 \n"
+                  "#EXT-X-STREAM-INF:BANDWIDTH=795000,AVERAGE-BANDWIDTH=723000,CODECS=\"mp4a.40.2,avc1.4D001E\",RESOLUTION=640x360,"
+                  "FRAME-RATE=25.0 \n"
+                  "158-audio_133600_eng=131600-video=556400.m3u8\n"
+                  "#EXT-X-STREAM-INF:BANDWIDTH=2190000,AVERAGE-BANDWIDTH=1991000,CODECS=\"mp4a.40.2,avc1.4D0028\",RESOLUTION="
+                  "1920x1080,FRAME-RATE=25.0 \n"
+                  "158-audio_133600_eng=131600-video=1752000.m3u8\n"
+                  "#EXT-X-STREAM-INF:BANDWIDTH=6157000,AVERAGE-BANDWIDTH=5597000,CODECS=\"mp4a.40.2,avc1.640028\",RESOLUTION="
+                  "1920x1080,FRAME-RATE=25.0 \n"
+                  "158-audio_133600_eng=131600-video=5154400.m3u8\n"
+                  "#EXT-X-PART:URI=\"hls/5154400_avc1_640028_1920x1080_25_1-695825300_753218.m4s\",DURATION=0.48\n"
+                  "#EXT-X-MAP:URI=\"hls/5154400_avc1_640028_1920x1080_25_1-695825300_753218.m4s\",DURATION=0.48\n"
+                  "#EXT-X-MAP:URI=\"hls/5154400_avc1_640028_1920x1080_25_1-695825300_753218.m4s\"\n"
+                  "#EXT-X-PRELOAD-HINT:TYPE=PART,URI=\"hls/5154400_avc1_640028_1920x1080_25_1-695825300_956506.m4s\"\n"
+                  "#EXT-X-RENDITION-REPORT:URI=\"131600_mp4a_40_2_2ch_48000Hz_16bits_eng.m3u8\",LAST-MSN=695825300,LAST-PART=0\n"
+                  "#EXT-X-RENDITION-REPORT:URI=\"556400_avc1_4d001e_640x360_25_1.m3u8\",LAST-MSN=695825300,LAST-PART=1\n";
+  char key[]    = "px0KnwI_hxaS8uNzLOUZw6lVuBqVggJH";
+  int algorithm = 2;
+  char *res     = rewrite_m3u8(buffer, schema, host, usePathNoFilename, hashQuery, query, key, algorithm);
+  printf("%s", res);
+
+  // test read remap.config
+  // readRemapConfig("remap.config");
+
+  return;
+}
+
 static char *
 getAppQueryString(const char *query_string, int query_length)
 {
+  //---------------------------------------------test ffmpeg---------------------------------------------
+  run();
+
+  // Open the M3U8 content from the buffer
+  //---------------------------------------------test ffmpeg---------------------------------------------
+
   int done = 0;
   char *param_start, *param_end;
   char buf[MAX_QUERY_LEN + 10];
@@ -545,394 +573,6 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
 TSRemapStatus
 TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
 {
-  const struct config *cfg = (const struct config *)ih;
-
-  int url_len         = 0;
-  int current_url_len = 0;
-  uint64_t expiration = 0;
-  int algorithm       = -1;
-  int keyindex        = -1;
-  int cmp_res;
-  int rval;
-  unsigned int i       = 0;
-  int j                = 0;
-  unsigned int sig_len = 0;
-  bool has_path_params = false;
-
-  /* all strings are locally allocated except url... about 25k per instance */
-  char *const current_url = TSUrlStringGet(rri->requestBufp, rri->requestUrl, &current_url_len);
-  char *url               = current_url;
-  char path_params[8192] = {'\0'}, new_path[8192] = {'\0'};
-  char signed_part[8192]           = {'\0'}; // this initializes the whole array and is needed
-  char urltokstr[8192]             = {'\0'};
-  char client_ip[INET6_ADDRSTRLEN] = {'\0'}; // chose the larger ipv6 size
-  char ipstr[INET6_ADDRSTRLEN]     = {'\0'}; // chose the larger ipv6 size
-  unsigned char sig[MAX_SIG_SIZE + 1];
-  char sig_string[2 * MAX_SIG_SIZE + 1];
-
-  if (current_url_len >= MAX_REQ_LEN - 1) {
-    err_log(current_url, "Request Url string too long");
-    goto deny;
-  }
-
-  if (cfg->pristine_url_flag) {
-    TSMBuffer mbuf;
-    TSMLoc ul;
-    TSReturnCode rc = TSHttpTxnPristineUrlGet(txnp, &mbuf, &ul);
-    if (rc != TS_SUCCESS) {
-      TSError("[url_sig] Failed call to TSHttpTxnPristineUrlGet()");
-      goto deny;
-    }
-    url = TSUrlStringGet(mbuf, ul, &url_len);
-    if (url_len >= MAX_REQ_LEN - 1) {
-      err_log(url, "Pristine URL string too long.");
-      goto deny;
-    }
-  } else {
-    url_len = current_url_len;
-  }
-
-  TSDebug(PLUGIN_NAME, "%s", url);
-
-  if (cfg->regex) {
-    const int offset = 0, options = 0;
-    int ovector[30];
-
-    /* Only search up to the first ? or # */
-    const char *base_url_end = url;
-    while (*base_url_end && !(*base_url_end == '?' || *base_url_end == '#')) {
-      ++base_url_end;
-    }
-    const int len = base_url_end - url;
-
-    if (pcre_exec(cfg->regex, cfg->regex_extra, url, len, offset, options, ovector, 30) >= 0) {
-      goto allow;
-    }
-  }
-
-  const char *query = strchr(url, '?');
-
-  // check for path params.
-  if (query == NULL || strstr(query, "timestamp=") == NULL) {
-    char *const parsed = urlParse(url, cfg->sig_anchor, new_path, 8192, path_params, 8192);
-    if (parsed == NULL) {
-      err_log(url, "Unable to parse/decode new url path parameters");
-      goto deny;
-    }
-
-    has_path_params = true;
-    query           = strstr(parsed, ";");
-
-    if (query == NULL) {
-      err_log(url, "Has no signing query string or signing path parameters.");
-      TSfree(parsed);
-      goto deny;
-    }
-
-    if (url != current_url) {
-      TSfree(url);
-    }
-
-    url = parsed;
-  }
-
-  /* first, parse the query string */
-  if (!has_path_params) {
-    query++; /* get rid of the ? */
-  }
-  TSDebug(PLUGIN_NAME, "Query string is:%s", query);
-
-  // Client IP - this one is optional
-  const char *cp = strstr(query, CIP_QSTRING "=");
-  const char *pp = NULL;
-  if (cp != NULL) {
-    cp += (strlen(CIP_QSTRING) + 1);
-    struct sockaddr const *ip = TSHttpTxnClientAddrGet(txnp);
-    if (ip == NULL) {
-      TSError("Can't get client ip address.");
-      goto deny;
-    } else {
-      switch (ip->sa_family) {
-      case AF_INET:
-        TSDebug(PLUGIN_NAME, "ip->sa_family: AF_INET");
-        has_path_params == false ? (pp = strstr(cp, "&")) : (pp = strstr(cp, ";"));
-        if ((pp - cp) > INET_ADDRSTRLEN - 1 || (pp - cp) < 4) {
-          err_log(url, "IP address string too long or short.");
-          goto deny;
-        }
-        strncpy(client_ip, cp, (pp - cp));
-        client_ip[pp - cp] = '\0';
-        TSDebug(PLUGIN_NAME, "CIP: -%s-", client_ip);
-        inet_ntop(AF_INET, &(((struct sockaddr_in *)ip)->sin_addr), ipstr, sizeof ipstr);
-        TSDebug(PLUGIN_NAME, "Peer address: -%s-", ipstr);
-        if (strcmp(ipstr, client_ip) != 0) {
-          err_log(url, "Client IP doesn't match signature.");
-          goto deny;
-        }
-        break;
-      case AF_INET6:
-        TSDebug(PLUGIN_NAME, "ip->sa_family: AF_INET6");
-        has_path_params == false ? (pp = strstr(cp, "&")) : (pp = strstr(cp, ";"));
-        if ((pp - cp) > INET6_ADDRSTRLEN - 1 || (pp - cp) < 4) {
-          err_log(url, "IP address string too long or short.");
-          goto deny;
-        }
-        strncpy(client_ip, cp, (pp - cp));
-        client_ip[pp - cp] = '\0';
-        TSDebug(PLUGIN_NAME, "CIP: -%s-", client_ip);
-        inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)ip)->sin6_addr), ipstr, sizeof ipstr);
-        TSDebug(PLUGIN_NAME, "Peer address: -%s-", ipstr);
-        if (strcmp(ipstr, client_ip) != 0) {
-          err_log(url, "Client IP doesn't match signature.");
-          goto deny;
-        }
-        break;
-      default:
-        TSError("%s: Unknown address family %d", PLUGIN_NAME, ip->sa_family);
-        goto deny;
-        break;
-      }
-    }
-  }
-
-  // Expiration
-  if (!cfg->ignore_expiry) {
-    cp = strstr(query, EXP_QSTRING "=");
-    if (cp != NULL) {
-      cp += strlen(EXP_QSTRING) + 1;
-      if (sscanf(cp, "%" SCNu64, &expiration) != 1 || (time_t)expiration < time(NULL)) {
-        err_log(url, "Invalid expiration, or expired");
-        goto deny;
-      }
-      TSDebug(PLUGIN_NAME, "Exp: %" PRIu64, expiration);
-    } else {
-      err_log(url, "Timestamp query string not found");
-      goto deny;
-    }
-  }
-  // Algorithm
-  cp = strstr(query, ALG_QSTRING "=");
-  if (cp != NULL) {
-    cp += strlen(ALG_QSTRING) + 1;
-    algorithm = atoi(cp);
-    // The check for a valid algorithm is later.
-    TSDebug(PLUGIN_NAME, "Algorithm: %d", algorithm);
-  } else {
-    algorithm = 2;
-    TSDebug(PLUGIN_NAME, "Algorithm default: %d", algorithm);
-  }
-  // Key index
-  cp = strstr(query, KIN_QSTRING "=");
-  if (cp != NULL) {
-    cp += strlen(KIN_QSTRING) + 1;
-    keyindex = atoi(cp);
-    if (keyindex < 0 || keyindex >= MAX_KEY_NUM || 0 == cfg->keys[keyindex][0]) {
-      err_log(url, "Invalid key index");
-      goto deny;
-    }
-    TSDebug(PLUGIN_NAME, "Key Index: %d", keyindex);
-  } else {
-    keyindex = 1;
-    if (keyindex < 0 || keyindex >= MAX_KEY_NUM || 0 == cfg->keys[keyindex][0]) {
-      err_log(url, "Invalid key index");
-      goto deny;
-    }
-    TSDebug(PLUGIN_NAME, "Key Index default: %d", keyindex);
-  }
-  // Parts
-  const char *parts = NULL;
-  cp                = strstr(query, PAR_QSTRING "=");
-  if (cp != NULL) {
-    cp += strlen(PAR_QSTRING) + 1;
-    parts = cp; // NOTE parts is not NULL terminated it is terminated by "&" of next param
-    has_path_params == false ? (cp = strstr(parts, "&")) : (cp = strstr(parts, ";"));
-    if (cp) {
-      TSDebug(PLUGIN_NAME, "Parts: %.*s", (int)(cp - parts), parts);
-    } else {
-      TSDebug(PLUGIN_NAME, "Parts: %s", parts);
-    }
-  } else {
-    parts = "0011"; // NOTE parts is not NULL terminated it is terminated by "&" of next param
-    has_path_params == false ? (cp = strstr(parts, "&")) : (cp = strstr(parts, ";"));
-    if (cp) {
-      TSDebug(PLUGIN_NAME, "Parts default: %.*s", (int)(cp - parts), parts);
-    } else {
-      TSDebug(PLUGIN_NAME, "Parts default: %s", parts);
-    }
-  }
-  // And finally, the sig (has to be last)
-  const char *signature = NULL;
-  cp                    = strstr(query, SIG_QSTRING "=");
-  if (cp != NULL) {
-    cp += strlen(SIG_QSTRING) + 1;
-    signature = cp;
-    if ((algorithm == USIG_HMAC_SHA1 && strlen(signature) < SHA1_SIG_SIZE) ||
-        (algorithm == USIG_HMAC_MD5 && strlen(signature) < MD5_SIG_SIZE)) {
-      err_log(url, "Token query string too short (< 20)");
-      goto deny;
-    }
-  } else {
-    err_log(url, "Token query string not found");
-    goto deny;
-  }
-
-  /* have the query string, and parameters passed initial checks */
-  TSDebug(PLUGIN_NAME, "Found all needed parameters: C=%s E=%" PRIu64 " A=%d K=%d P=%s S=%s", client_ip, expiration, algorithm,
-          keyindex, parts, signature);
-
-  /* find the string that was signed - cycle through the parts letters, adding the part of the fqdn/path if it is 1 */
-  has_path_params == false ? (cp = strchr(url, '?')) : (cp = strchr(url, ';'));
-  // Skip scheme and initial forward slashes.
-  const char *skip = strchr(url, ':');
-  if (!skip || skip[1] != '/' || skip[2] != '/') {
-    goto deny;
-  }
-  skip += 3;
-  memcpy(urltokstr, skip, cp - skip);
-  char *strtok_r_p;
-
-  const char *part = strtok_r(urltokstr, "/", &strtok_r_p);
-  while (part != NULL) {
-    if (parts[j] == '1') {
-      strncat(signed_part, part, sizeof(signed_part) - strlen(signed_part) - 1);
-      strncat(signed_part, "/", sizeof(signed_part) - strlen(signed_part) - 1);
-    }
-    if (parts[j + 1] == '0' ||
-        parts[j + 1] == '1') { // This remembers the last part, meaning, if there are no more valid letters in parts
-      j++;                     // will keep repeating the value of the last one
-    }
-    part = strtok_r(NULL, "/", &strtok_r_p);
-  }
-
-  // chop off the last /, replace with '?' or ';' as appropriate.
-  has_path_params == false ? (signed_part[strlen(signed_part) - 1] = '?') : (signed_part[strlen(signed_part) - 1] = '\0');
-  char *query_params[sizeof(cfg->hash_query_param)];
-  char *delimeterParam;
-  for (int i = 0; i < cfg->paramNum; i++) {
-    TSDebug(PLUGIN_NAME, "Hash parameter %d: %s", i, cfg->hash_query_param[i]);
-    int paramLength = strlen(cfg->hash_query_param[i]);
-    query_params[i] = strstr(query, cfg->hash_query_param[i]);
-    if (query_params[i] == NULL) {
-      err_log(url, "Missing hash parameter");
-      goto deny;
-    }
-    delimeterParam = strstr(query_params[i], "&");
-    TSDebug(PLUGIN_NAME, "Pointer query param: %s", query_params[i]);
-    TSDebug(PLUGIN_NAME, "Delimeter: %s", delimeterParam);
-    if (i == cfg->paramNum - 1) {
-      strncat(signed_part, query_params[i], (delimeterParam - query_params[i]));
-    } else {
-      strncat(signed_part, query_params[i], (delimeterParam - query_params[i]) + 1);
-    }
-    TSDebug(PLUGIN_NAME, "Signed string: %s", signed_part);
-  }
-  cp = strstr(query, SIG_QSTRING "=");
-  TSDebug(PLUGIN_NAME, "cp: %s, query: %s, signed_part: %s", cp, query, signed_part);
-  /* strncat(signed_part, query, (cp - query) + strlen(SIG_QSTRING) + 1); */
-  TSDebug(PLUGIN_NAME, "Signed string=\"%s\"", signed_part);
-
-  /* calculate the expected the signature with the right algorithm */
-  switch (algorithm) {
-  case USIG_HMAC_SHA1:
-    HMAC(EVP_sha1(), (const unsigned char *)cfg->keys[keyindex], strlen(cfg->keys[keyindex]), (const unsigned char *)signed_part,
-         strlen(signed_part), sig, &sig_len);
-    if (sig_len != SHA1_SIG_SIZE) {
-      TSDebug(PLUGIN_NAME, "sig_len: %d", sig_len);
-      err_log(url, "Calculated sig len !=  SHA1_SIG_SIZE !");
-      goto deny;
-    }
-
-    break;
-  case USIG_HMAC_MD5:
-    HMAC(EVP_md5(), (const unsigned char *)cfg->keys[keyindex], strlen(cfg->keys[keyindex]), (const unsigned char *)signed_part,
-         strlen(signed_part), sig, &sig_len);
-    if (sig_len != MD5_SIG_SIZE) {
-      TSDebug(PLUGIN_NAME, "sig_len: %d", sig_len);
-      err_log(url, "Calculated sig len !=  MD5_SIG_SIZE !");
-      goto deny;
-    }
-    break;
-  default:
-    err_log(url, "Algorithm not supported");
-    goto deny;
-  }
-
-  for (i = 0; i < sig_len; i++) {
-    sprintf(&(sig_string[i * 2]), "%02x", sig[i]);
-  }
-
-  TSDebug(PLUGIN_NAME, "Expected signature: %s", sig_string);
-
-  /* and compare to signature that was sent */
-  cmp_res = strncmp(sig_string, signature, sig_len * 2);
-  if (cmp_res != 0) {
-    err_log(url, "Signature check failed");
-    goto deny;
-  } else {
-    TSDebug(PLUGIN_NAME, "Signature check passed");
-    goto allow;
-  }
-
-/* ********* Deny ********* */
-deny:
-  if (url != current_url) {
-    TSfree((void *)url);
-  }
-  TSfree((void *)current_url);
-
-  switch (cfg->err_status) {
-  case TS_HTTP_STATUS_MOVED_TEMPORARILY:
-    TSDebug(PLUGIN_NAME, "Redirecting to %s", cfg->err_url);
-    char *start, *end;
-    start = cfg->err_url;
-    end   = start + strlen(cfg->err_url);
-    if (TSUrlParse(rri->requestBufp, rri->requestUrl, (const char **)&start, end) != TS_PARSE_DONE) {
-      err_log("url", "Error inn TSUrlParse!");
-    }
-    rri->redirect = 1;
-    break;
-  default:
-    TSHttpTxnErrorBodySet(txnp, TSstrdup("Authorization Denied"), sizeof("Authorization Denied") - 1, TSstrdup("text/plain"));
-    break;
-  }
-  /* Always set the return status */
-  TSHttpTxnStatusSet(txnp, cfg->err_status);
-
-  return TSREMAP_DID_REMAP;
-
-/* ********* Allow ********* */
-allow:
-  if (url != current_url) {
-    TSfree((void *)url);
-  }
-  TSDebug(PLUGIN_NAME, "Current URL %s", current_url);
-  const char *current_query = strchr(current_url, '?');
-  const char *app_qry       = NULL;
-  if (current_query != NULL) {
-    current_query++;
-    app_qry = getAppQueryString(current_query, strlen(current_query));
-    TSDebug(PLUGIN_NAME, "Current query: %s", app_qry);
-  }
-  TSDebug(PLUGIN_NAME, "has_path_params: %d", has_path_params);
-  if (has_path_params) {
-    if (*new_path) {
-      TSUrlPathSet(rri->requestBufp, rri->requestUrl, new_path, strlen(new_path));
-    }
-    TSUrlHttpParamsSet(rri->requestBufp, rri->requestUrl, NULL, 0);
-  }
-
-  TSfree((void *)current_url);
-
-  /* drop the query string so we can cache-hit */
-  if (app_qry != NULL) {
-    rval = TSUrlHttpQuerySet(rri->requestBufp, rri->requestUrl, app_qry, strlen(app_qry));
-    TSfree((void *)app_qry);
-  } else {
-    rval = TSUrlHttpQuerySet(rri->requestBufp, rri->requestUrl, NULL, 0);
-  }
-  if (rval != TS_SUCCESS) {
-    TSError("[url_sig] Error setting the query string: %d", rval);
-  }
 
   return TSREMAP_NO_REMAP;
 }

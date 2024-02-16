@@ -16,7 +16,7 @@
 
 TSXS?=/opt/trafficserver/bin/tsxs
 
-all:	url_sig_generate_token.c
+all:	url_sig_generate_token.cpp
 	$(TSXS) -v -o url_sig_generate_token.so $?
 
 install:

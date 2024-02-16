@@ -189,18 +189,14 @@ generateToken(char *data, char *key, int algorithm)
   unsigned char sig[MAX_SIG_SIZE];
   switch (algorithm) {
   case USIG_HMAC_SHA1:
-    HMAC(EVP_sha1(), (const unsigned char *)key, strlen(key), 
-    (const unsigned char *)data, strlen(data), 
-    sig, &sig_len);
+    HMAC(EVP_sha1(), (const unsigned char *)key, strlen(key), (const unsigned char *)data, strlen(data), sig, &sig_len);
     if (sig_len != SHA1_SIG_SIZE) {
       // deny
     }
 
     break;
   case USIG_HMAC_MD5:
-    HMAC(EVP_md5(), (const unsigned char *)key, strlen(key), 
-    (const unsigned char *)data, strlen(data), 
-    sig, &sig_len);
+    HMAC(EVP_md5(), (const unsigned char *)key, strlen(key), (const unsigned char *)data, strlen(data), sig, &sig_len);
     if (sig_len != MD5_SIG_SIZE) {
       // deny
     }
@@ -209,18 +205,18 @@ generateToken(char *data, char *key, int algorithm)
     // log err
     break;
   }
-    sig[sig_len] = '\0';
-    char *res = (char *)malloc(2*sig_len + 1);
-    memcpy(res, sig, sig_len);
-    res[sig_len] = '\0';
+  sig[sig_len] = '\0';
+  char *res    = (char *)malloc(2 * sig_len + 1);
+  memcpy(res, sig, sig_len);
+  res[sig_len] = '\0';
 
-    for (int i = 0; i < sig_len; i++) {
-        sprintf(&(res[i * 2]), "%02x", sig[i]);
-    }
+  for (int i = 0; i < sig_len; i++) {
+    sprintf(&(res[i * 2]), "%02x", sig[i]);
+  }
 
-    //free(sig);
-    return res;
-    // return (char *)sig;
+  // free(sig);
+  return res;
+  // return (char *)sig;
 }
 
 //---------------------------------for trim------------------------------------

@@ -13,6 +13,7 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "preLaunchTask": "Build and install",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -27,8 +28,8 @@
             "request": "launch",
             "program": "/duynnopt/Github/trafficserver/src/traffic_cache_tool/traffic_cache_tool",
             "args": [
-                "--spans=/opt/trafficserver/etc/trafficserver/storage.config", 
-                "--volumes=/opt/trafficserver/etc/trafficserver/volume.config", 
+                "--spans=/opt/trafficserver/etc/trafficserver/storage.config",
+                "--volumes=/opt/trafficserver/etc/trafficserver/volume.config",
                 "list"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

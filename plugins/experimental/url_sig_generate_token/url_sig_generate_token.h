@@ -19,14 +19,14 @@
 #pragma once
 
 /* in the query string that we add to sign the url: */
-#define CIP_QSTRING "C" /* C=24.0.33.12 designates the client IP address */
+#define CIP_QSTRING "C"         /* C=24.0.33.12 designates the client IP address */
 #define EXP_QSTRING "timestamp" /* timestamp=1356128799 means expires at (seconds since Unix epoch) */
-#define ALG_QSTRING "A" /* A=1 means hashing algorithm 1 */
-#define KIN_QSTRING "K" /* K=3 means use key number 3 */
+#define ALG_QSTRING "A"         /* A=1 means hashing algorithm 1 */
+#define KIN_QSTRING "K"         /* K=3 means use key number 3 */
 #define PAR_QSTRING \
   "P" /* P=1110 means use parts 0, 1 and 2 (and no more) for the hashing of the url after removing the 'http://' */
       /* and making the parts by doing a split("/") */
-#define SIG_QSTRING \
+#define SIG_QSTRING                                                                                                   \
   "token" /* token=9e2828d570a4bee3c964f698b0985ee58b9f6b64 means 9e2828d570a4bee3c964f698b0985ee58b9f6b64 is the sig \
          This one has to be the last one of the string */
 
@@ -52,8 +52,8 @@
 #define USIG_HMAC_SHA1 1
 #define USIG_HMAC_MD5 2
 
-
-#define PATH_MAX        4096
+#define PATH_MAX 4096
 
 static const char PLUGIN_NAME[] = "url_sig_generate_token";
 #include <ts/ts.h>
+#include "url_sig_config.h"

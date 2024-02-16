@@ -87,7 +87,7 @@ handle_buffering(TSCont contp, MyData *data)
      ourself. This VIO contains the buffer that we are to read from
      as well as the continuation we are to call when the buffer is
      empty. */
-  /*This is so that the transformation can get information 
+  /*This is so that the transformation can get information
   about the upstream vconnection’s write operation to the input buffer.*/
   write_vio = TSVConnWriteVIOGet(contp);
 
@@ -136,16 +136,16 @@ handle_buffering(TSCont contp, MyData *data)
 
       /* Modify the write VIO to reflect how much data we've
          completed. */
-      /* -Modify the input VIO to tell it how much data has been read 
+      /* -Modify the input VIO to tell it how much data has been read
       (increase the value of ndone).-*/
       TSVIONDoneSet(write_vio, TSVIONDoneGet(write_vio) + towrite);
     }
   }
-  /* -If there is more data left to read ( if ndone < nbytes), 
-  then the handle_buffering function wakes up the upstream vconnection 
+  /* -If there is more data left to read ( if ndone < nbytes),
+  then the handle_buffering function wakes up the upstream vconnection
   by sending it WRITE_READY- */
-  /* - The transformation sends WRITE_READY events when it needs more data; 
-  when data is available, the upstream vconnection reenables the transformation 
+  /* - The transformation sends WRITE_READY events when it needs more data;
+  when data is available, the upstream vconnection reenables the transformation
   with an IMMEDIATE event.- */
   /* Now we check the write VIO to see if there is data left to read. */
   if (TSVIONTodoGet(write_vio) > 0) {
@@ -159,14 +159,14 @@ handle_buffering(TSCont contp, MyData *data)
 
     /* Call back the write VIO continuation to let it know that we
        have completed the write operation. */
-    /* -When the data is read into the output buffer, 
-    the handle_buffering function sets the state of the transformation’s data structure to 
+    /* -When the data is read into the output buffer,
+    the handle_buffering function sets the state of the transformation’s data structure to
     STATE_OUTPUT_DATA and calls the upstream vconnection back with the WRITE_COMPLETE event.- */
     TSContCall(TSVIOContGet(write_vio), TS_EVENT_VCONN_WRITE_COMPLETE, write_vio);
-    /** -The upstream vconnection will probably shut down the write operation 
-    when it receives the WRITE_COMPLETE event. 
-    The handler function of the transformation, bnull_transform, 
-    receives an IMMEDIATE event and calls the handle_transform function. 
+    /** -The upstream vconnection will probably shut down the write operation
+    when it receives the WRITE_COMPLETE event.
+    The handler function of the transformation, bnull_transform,
+    receives an IMMEDIATE event and calls the handle_transform function.
     This time, the state is STATE_OUTPUT_DATA, so handle_transform calls handle_output.- */
   }
 
@@ -189,38 +189,38 @@ handle_output(TSCont contp, MyData *data)
     output_conn = TSTransformOutputVConnGet(contp);
 
     /* The handle_output function writes the buffer to the output vconnection:*/
-    data->output_vio = 
-          TSVConnWrite(output_conn, contp, data->output_reader, 
-                       TSIOBufferReaderAvail(data->output_reader));
+    data->output_vio = TSVConnWrite(output_conn, contp, data->output_reader, TSIOBufferReaderAvail(data->output_reader));
 
     TSAssert(data->output_vio);
   }
   return 1;
 }
-void print_buffer_content(MyData *data) {
-    int64_t avail;
-    const char* start;
+void
+print_buffer_content(MyData *data)
+{
+  int64_t avail;
+  const char *start;
 
-    if (data->output_buffer && data->output_reader) {
-        avail = TSIOBufferReaderAvail(data->output_reader);
-        start = TSIOBufferReaderStart(data->output_reader);
+  if (data->output_buffer && data->output_reader) {
+    avail = TSIOBufferReaderAvail(data->output_reader);
+    start = TSIOBufferReaderStart(data->output_reader);
 
-        if (avail > 0 && start) {
-            char* buffer_content = (char*) malloc(avail + 1);
-            memcpy(buffer_content, start+10, avail);
-            buffer_content[avail] = '\0'; // Null-terminate the string
+    if (avail > 0 && start) {
+      char *buffer_content = (char *)malloc(avail + 1);
+      memcpy(buffer_content, start + 10, avail);
+      buffer_content[avail] = '\0'; // Null-terminate the string
 
-            printf("%s\n", buffer_content);
+      printf("%s\n", buffer_content);
 
-            free(buffer_content);
-        }
+      free(buffer_content);
     }
+  }
 }
 
-/**The handle_transform function examines the data parameter for the continuation passed to it 
- * (the continuation passed to handle_transform is the transformation vconnection). 
- * The data structure keeps track of two states: 
- *    copying the data into the buffer (STATE_BUFFER_DATA) 
+/**The handle_transform function examines the data parameter for the continuation passed to it
+ * (the continuation passed to handle_transform is the transformation vconnection).
+ * The data structure keeps track of two states:
+ *    copying the data into the buffer (STATE_BUFFER_DATA)
  *    and writing the contents of the buffer to the output vconnection (STATE_OUTPUT_DATA).*/
 static void
 handle_transform(TSCont contp)
@@ -245,10 +245,10 @@ handle_transform(TSCont contp)
       done = handle_buffering(contp, data);
       break;
     case STATE_OUTPUT_DATA:
-      /** -The upstream vconnection will probably shut down the write operation 
-      when it receives the WRITE_COMPLETE event. 
-      The handler function of the transformation, bnull_transform, 
-      receives an IMMEDIATE event and calls the handle_transform function. 
+      /** -The upstream vconnection will probably shut down the write operation
+      when it receives the WRITE_COMPLETE event.
+      The handler function of the transformation, bnull_transform,
+      receives an IMMEDIATE event and calls the handle_transform function.
       This time, the state is STATE_OUTPUT_DATA, so handle_transform calls handle_output.- */
       done = handle_output(contp, data);
       break;
@@ -259,7 +259,7 @@ handle_transform(TSCont contp)
   } while (!done);
 }
 
-//handle ERROR, WRITE_COMPLETE, WRITE_READY, and IMMEDIATE events.
+// handle ERROR, WRITE_COMPLETE, WRITE_READY, and IMMEDIATE events.
 //**bnull_transform** function calls **handle_transform** to handle WRITE_READY and IMMEDIATE.
 static int
 bnull_transform(TSCont contp, TSEvent event, void *edata ATS_UNUSED)
@@ -308,11 +308,11 @@ bnull_transform(TSCont contp, TSEvent event, void *edata ATS_UNUSED)
   return 0;
 }
 /*
-The default behavior for transformations is to cache the transformed content 
-(if desired, you also can tell Traffic Server to cache untransformed content). 
-Therefore, only responses received directly from an origin server need to be transformed. 
-Objects served from the cache are already transformed. 
-To determine whether the response is from the origin server, 
+The default behavior for transformations is to cache the transformed content
+(if desired, you also can tell Traffic Server to cache untransformed content).
+Therefore, only responses received directly from an origin server need to be transformed.
+Objects served from the cache are already transformed.
+To determine whether the response is from the origin server,
 the routine transformable checks the response header for the “200 OK” server response.*/
 static int
 transformable(TSHttpTxn txnp)
@@ -332,16 +332,16 @@ transformable(TSHttpTxn txnp)
 
   return retv;
 }
-/*If the response is transformable, 
-then the plugin creates a transformation vconnection that gets called back 
-when the response data is ready to be transformed 
+/*If the response is transformable,
+then the plugin creates a transformation vconnection that gets called back
+when the response data is ready to be transformed
 (as it is streaming from the origin server).*/
 static void
 transform_add(TSHttpTxn txnp)
 {
   TSVConn connp;
 
-  connp = TSTransformCreate(bnull_transform, txnp);//handle func is bnull_transform
+  connp = TSTransformCreate(bnull_transform, txnp); // handle func is bnull_transform
   TSHttpTxnHookAdd(txnp, TS_HTTP_RESPONSE_TRANSFORM_HOOK, connp);
   return;
 }

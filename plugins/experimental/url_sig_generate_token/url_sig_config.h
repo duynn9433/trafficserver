@@ -1,5 +1,6 @@
 #pragma once
 #include "url_sig_generate_token.h"
+#include <string>
 #ifdef HAVE_PCRE_PCRE_H
 #include <pcre/pcre.h>
 #else
@@ -21,5 +22,6 @@ struct config {
 
 typedef struct config config_t;
 
-static void free_cfg(config_t *cfg);
-int readRemapConfig(char *remapConfigPath);
+void free_cfg(config_t *cfg);
+int readRemapConfig(char *remapConfigPath, std::map<std::string, config_t> *configMap);
+int readRemapConfigElement(std::string domain, char *remapConfigElementPath, std::map<std::string, config_t> *configMap);
