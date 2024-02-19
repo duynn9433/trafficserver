@@ -8,7 +8,6 @@ extern "C" {
   #include <stdio.h>
   #include "str_builder.h"
   #include <ctype.h>
-  #include "str_builder.h"
 }
 
 void

@@ -54,6 +54,8 @@
 
 #define PATH_MAX 4096
 
+#define REMAP_CONFIG_FILE_NAME "remap.config"
+
 static const char PLUGIN_NAME[] = "url_sig_generate_token";
 #include <ts/ts.h>
 #include "url_sig_config.h"

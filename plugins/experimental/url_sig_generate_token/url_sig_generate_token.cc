@@ -26,7 +26,7 @@
 #include <string>
 
 extern "C" {
-  #include "url_sig_config.h"
+#include "url_sig_config.h"
 #include "url_sig_generate_token.h"
 #include <inttypes.h>
 #include <stdio.h>
@@ -92,7 +92,7 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
     config_file = config_filepath_buf;
   }
   TSDebug(PLUGIN_NAME, "config file name: %s", config_file);
-  snprintf(remap_config_file_buf, sizeof(remap_config_file_buf), "%s/%s", tsConfigDir, "remap.config");
+  snprintf(remap_config_file_buf, sizeof(remap_config_file_buf), "%s/%s", tsConfigDir, REMAP_CONFIG_FILE_NAME);
   remap_config_file = remap_config_file_buf;
   // read file
   config_map.clear();
@@ -573,6 +573,5 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
 TSRemapStatus
 TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
 {
-
   return TSREMAP_NO_REMAP;
 }
