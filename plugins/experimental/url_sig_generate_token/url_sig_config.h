@@ -1,6 +1,7 @@
 #pragma once
 #include "url_sig_generate_token.h"
 #include <string>
+#include <map>
 #ifdef HAVE_PCRE_PCRE_H
 #include <pcre/pcre.h>
 #else
@@ -18,6 +19,10 @@ struct config {
   bool ignore_expiry;
   char hash_query_param[MAX_HASH_QUERY_PARAM_NUM][MAX_HASH_QUERY_LEN];
   int paramNum;
+
+  char use_parts[MAX_USE_PARTS_LEN];
+  int algorithm;
+  int knumber;
 };
 
 typedef struct config config_t;
