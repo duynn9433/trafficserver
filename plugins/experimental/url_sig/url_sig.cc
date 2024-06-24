@@ -25,21 +25,24 @@
 
 #include "url_sig.h"
 
-#include <inttypes.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cinttypes>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <sys/types.h>
-#include <time.h>
+#include <ctime>
 #include <openssl/hmac.h>
 #include <openssl/evp.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <limits.h>
-#include <ctype.h>
-#include <stdint.h>
-#include <stdbool.h>
+#include <climits>
+#include <cctype>
+#include <cstdint>
+#include <cstdbool>
+#include <string>
+#include <list>
+#include <fstream>
 
 #ifdef HAVE_PCRE_PCRE_H
 #include <pcre/pcre.h>
@@ -50,25 +53,30 @@
 #include <ts/ts.h>
 #include <ts/remap.h>
 
+using namespace std;
+
 static const char PLUGIN_NAME[] = "url_sig";
 
 struct config {
   TSHttpStatus err_status;
-  char *err_url;
+  string* err_url;
   char keys[MAX_KEY_NUM][MAX_KEY_LEN];
   pcre *regex;
   pcre_extra *regex_extra;
   int pristine_url_flag;
-  char *sig_anchor;
+  string* sig_anchor;
   bool ignore_expiry;
-  char hash_query_param[MAX_HASH_QUERY_PARAM_NUM][MAX_HASH_QUERY_LEN];
+  list<string> hash_query_param;
+  // char hash_query_param[MAX_HASH_QUERY_PARAM_NUM][MAX_HASH_QUERY_LEN];
   int paramNum;
   char use_parts[MAX_USE_PARTS_LEN];
   int algorithm;
   int knumber;
-  char bypass_method[10][10];
+  list<string> bypass_method;
+  // char bypass_method[10][10];
   int method_num;
-  char timeshift_param[MAX_TIME_SHIFT_PARAM][MAX_HASH_QUERY_LEN];
+  list<string> timeshift_param;
+  // char timeshift_param[MAX_TIME_SHIFT_PARAM][MAX_HASH_QUERY_LEN];
   int timeshift_param_num;
   bool enable_watermark;
 };
@@ -77,8 +85,10 @@ static void
 free_cfg(struct config *cfg)
 {
   TSDebug(PLUGIN_NAME, "Cleaning up");
-  TSfree(cfg->err_url);
-  TSfree(cfg->sig_anchor);
+  delete cfg->err_url;
+  delete cfg->sig_anchor;
+  // TSfree(cfg->err_url);
+  // TSfree(cfg->sig_anchor);
 
   if (cfg->regex_extra) {
 #ifndef PCRE_STUDY_JIT_COMPILE
@@ -137,7 +147,7 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
   }
   TSDebug(PLUGIN_NAME, "config file name: %s", config_file);
   FILE *file = fopen(config_file, "r");
-  if (file == NULL) {
+  if (file == nullptr) {
     snprintf(errbuf, errbuf_size, "[TSRemapNewInstance] - Error opening file %s", config_file);
     return TS_ERROR;
   }
@@ -151,10 +161,10 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
   int timeshift_param_num = 0;
   bool enable_watermark = false;
 
-  cfg = TSmalloc(sizeof(struct config));
+  cfg = new config;
   memset(cfg, 0, sizeof(struct config));
 
-  while (fgets(line, sizeof(line), file) != NULL) {
+  while (fgets(line, sizeof(line), file) != nullptr ) {
     TSDebug(PLUGIN_NAME, "LINE: %s (%d)", line, (int)strlen(line));
     line_no++;
 
@@ -173,7 +183,7 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
       continue;
     }
     char *pos = strchr(line, '=');
-    if (pos == NULL) {
+    if (pos == nullptr ) {
       TSError("[url_sig] Error parsing line %d of file %s (%s)", line_no, config_file, line);
       continue;
     }
@@ -183,10 +193,10 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
       value++;
     }
     pos = strchr(value, '\n'); // remove the new line, terminate the string
-    if (pos != NULL) {
+    if (pos != nullptr ) {
       *pos = '\0';
     }
-    if (pos == NULL || strlen(value) >= MAX_KEY_LEN) {
+    if (pos == nullptr || strlen(value) >= MAX_KEY_LEN) {
       snprintf(errbuf, errbuf_size, "[TSRemapNewInstance] - Maximum key length (%d) exceeded on line %d", MAX_KEY_LEN - 1, line_no);
       fclose(file);
       free_cfg(cfg);
@@ -214,7 +224,7 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
       snprintf(&cfg->keys[keynum][0], MAX_KEY_LEN, "%s", value);
     } else if (strncmp(line, "error_url", 9) == 0) {
       if (atoi(value)) {
-        cfg->err_status = atoi(value);
+        cfg->err_status = static_cast<TSHttpStatus>(atoi(value));
       }
       value += 3;
       while (isspace(*value)) {
@@ -223,7 +233,7 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
       if (cfg->err_status == TS_HTTP_STATUS_MOVED_TEMPORARILY) {
         cfg->err_url = TSstrndup(value, strlen(value));
       } else {
-        cfg->err_url = NULL;
+        cfg->err_url = nullptr ;
       }
     } else if (strncmp(line, "sig_anchor", 10) == 0) {
       cfg->sig_anchor = TSstrndup(value, strlen(value));
@@ -237,8 +247,8 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
         continue;
       }
 
-      cfg->regex = pcre_compile(value, options, &errptr, &erroffset, NULL);
-      if (cfg->regex == NULL) {
+      cfg->regex = pcre_compile(value, options, &errptr, &erroffset, nullptr );
+      if (cfg->regex == nullptr ) {
         TSDebug(PLUGIN_NAME, "Regex compilation failed with error (%s) at character %d", errptr, erroffset);
       } else {
 #ifdef PCRE_STUDY_JIT_COMPILE
@@ -317,14 +327,14 @@ TSRemapNewInstance(int argc, char *argv[], void **ih, char *errbuf, int errbuf_s
 
   switch (cfg->err_status) {
   case TS_HTTP_STATUS_MOVED_TEMPORARILY:
-    if (cfg->err_url == NULL) {
+    if (cfg->err_url == nullptr ) {
       snprintf(errbuf, errbuf_size, "[TSRemapNewInstance] - Invalid config, err_status == 302, but err_url == NULL");
       free_cfg(cfg);
       return TS_ERROR;
     }
     break;
   case TS_HTTP_STATUS_FORBIDDEN:
-    if (cfg->err_url != NULL) {
+    if (cfg->err_url != nullptr ) {
       snprintf(errbuf, errbuf_size, "[TSRemapNewInstance] - Invalid config, err_status == 403, but err_url != NULL");
       free_cfg(cfg);
       return TS_ERROR;
@@ -368,7 +378,7 @@ getAppQueryString(const struct config* cfg, const char *query_string, int query_
 
   if (query_length > MAX_QUERY_LEN) {
     TSDebug(PLUGIN_NAME, "Cannot process the query string as the length exceeds %d bytes", MAX_QUERY_LEN);
-    return NULL;
+    return nullptr;
   }
   memset(buf, 0, sizeof(buf));
   memcpy(buf, query_string, query_length);
@@ -381,7 +391,7 @@ getAppQueryString(const struct config* cfg, const char *query_string, int query_
   // Remove token query param
   do {
     char* token = strstr(p, SIG_QSTRING "=");
-    if (token != NULL) {
+    if (token != nullptr) {
       TSDebug(PLUGIN_NAME, "Token %s", token);
       done = 1;
       char* delimeter = strchr(token, '&');
@@ -392,11 +402,11 @@ getAppQueryString(const struct config* cfg, const char *query_string, int query_
       // remove "&token={TOKEN}" and retain all other params
       if (token != p) {
         strncat(result, p, (token - p) - 1);
-        if (delimeter != NULL) {
+        if (delimeter != nullptr) {
           strcat(result, delimeter);
         }
       } else {
-        if (delimeter != NULL) {
+        if (delimeter != nullptr) {
           delimeter++;
           strcat(result, delimeter);
         }
@@ -409,20 +419,20 @@ getAppQueryString(const struct config* cfg, const char *query_string, int query_
   } while (!done);
 
   // Add timewater mark for manifest file (hls or dash) exclude CUTV and master manifest (index.m3u8)
-  if (cfg->enable_watermark && strstr(query_string, "begin=") == NULL && strstr(query_string, "end=") == NULL 
-    && strstr(current_url, "/index.m3u8") == NULL && strstr(current_url, "/index.mpd") == NULL 
-    && (strstr(current_url, ".m3u8") != NULL || (strstr(current_url, ".mpd") != NULL))) {
-    
+  if (cfg->enable_watermark && strstr(query_string, "begin=") == nullptr && strstr(query_string, "end=") == nullptr
+    && strstr(current_url, "/index.m3u8") == nullptr && strstr(current_url, "/index.mpd") == nullptr
+    && (strstr(current_url, ".m3u8") != nullptr || (strstr(current_url, ".mpd") != nullptr ))) {
+
     int timeshift = extractTimeshift(cfg->timeshift_param, cfg->timeshift_param_num, p);
 
-    long long watermark = time(NULL) - timeshift;
+    long long watermark = time(nullptr) - timeshift;
 
     // add watermark=%s;
     char* join = (result[0] == '\0') ? "" : "&";
     char* temp = result;
     sprintf(result, "%s%swm=%lld", temp, join, watermark);
   }
-  
+
 
   TSDebug(PLUGIN_NAME, "Result %s", result);
   if (strlen(result) > 0) {
@@ -430,28 +440,28 @@ getAppQueryString(const struct config* cfg, const char *query_string, int query_
     memset(result, '\0', sizeof(result));
     return p;
   } else {
-    return NULL;
+    return nullptr ;
   }
 }
 
 /**
  *  params = [ "time_shift", "timeshift", "delay"]
- * 
- * 
- * query_string: 
+ *
+ *
+ * query_string:
  * uid=10&timeshift=1000&token=24234234324 => 1000
- * channel=100&token=1000&delay=2&x=34324&u=34324324 => 
+ * channel=100&token=1000&delay=2&x=34324&u=34324324 =>
  * time_shift=1234&a=342342&bb=343434343434&c=adfjaslfjsadk324l32j4l => 1234
  */
- 
+
 int extractTimeshift(char params[][MAX_HASH_QUERY_LEN], int param_num, char* query_string) {
 	for (int i = 0; i < param_num; i++) {
 		char* param = params[i];
 		int result = 0;
-		
+
 		char* pos = strstr(query_string, param);
-    
-	    if (pos != NULL) {
+
+	    if (pos != nullptr ) {
 	        // Move the pointer to the position after "timeshift="
 	        pos += strlen(param);
 	        sscanf(pos, "=%d", &result);
@@ -462,7 +472,7 @@ int extractTimeshift(char params[][MAX_HASH_QUERY_LEN], int param_num, char* que
           }
 	    }
 	}
-	
+
 	return 0;
 }
 
@@ -492,7 +502,7 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
   char url[8192]                     = {'\0'};
   unsigned char decoded_string[2048] = {'\0'};
   char new_url[8192]; /* new_url is not null_terminated */
-  char *p = NULL, *sig_anchor = NULL, *saveptr = NULL;
+  char *p = nullptr, *sig_anchor = nullptr, *saveptr = nullptr ;
   int i = 0, numtoks = 0, sig_anchor_seg = 0;
   size_t decoded_len = 0;
 
@@ -506,29 +516,29 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
 
   char *skip = strchr(url, ':');
   if (!skip || skip[1] != '/' || skip[2] != '/') {
-    return NULL;
+    return nullptr ;
   }
   skip += 3;
   // preserve the scheme in the new_url.
   if (!fixedBufferWrite(&new_url_end, &new_url_len_left, url, skip - url)) {
     TSError("insufficient space to copy schema into new_path_seg buffer.");
-    return NULL;
+    return nullptr ;
   }
   TSDebug(PLUGIN_NAME, "%s:%d - new_url: %.*s\n", __FILE__, __LINE__, (int)(new_url_end - new_url), new_url);
 
   // parse the url.
-  if ((p = strtok_r(skip, "/", &saveptr)) != NULL) {
+  if ((p = strtok_r(skip, "/", &saveptr)) != nullptr ) {
     segment[numtoks++] = p;
     do {
-      p = strtok_r(NULL, "/", &saveptr);
-      if (p != NULL) {
+      p = strtok_r(nullptr, "/", &saveptr);
+      if (p != nullptr ) {
         segment[numtoks] = p;
-        if (anchor != NULL && sig_anchor_seg == 0) {
+        if (anchor != nullptr && sig_anchor_seg == 0) {
           // look for the signed anchor string.
-          if ((sig_anchor = strcasestr(segment[numtoks], anchor)) != NULL) {
-            // null terminate this segment just before he signing anchor, this should be a ';'.
+          if ((sig_anchor = strcasestr(segment[numtoks], anchor)) != nullptr ) {
+            // nullptr terminate this segment just before he signing anchor, this should be a ';'.
             *(sig_anchor - 1) = '\0';
-            if ((sig_anchor = strstr(sig_anchor, "=")) != NULL) {
+            if ((sig_anchor = strstr(sig_anchor, "=")) != nullptr ) {
               *sig_anchor = '\0';
               sig_anchor++;
               sig_anchor_seg = numtoks;
@@ -537,12 +547,12 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
         }
         numtoks++;
       }
-    } while (p != NULL && numtoks < MAX_SEGMENTS);
+    } while (p != nullptr && numtoks < MAX_SEGMENTS);
   } else {
-    return NULL;
+    return nullptr ;
   }
   if ((numtoks >= MAX_SEGMENTS) || (numtoks < 3)) {
-    return NULL;
+    return nullptr ;
   }
 
   // create a new path string for later use when dealing with query parameters.
@@ -550,19 +560,19 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
   // starting with segment 1.
   for (i = 1; i < numtoks; i++) {
     // if no signing anchor is found, skip the signed parameters segment.
-    if (sig_anchor == NULL && i == numtoks - 2) {
+    if (sig_anchor == nullptr && i == numtoks - 2) {
       // the signing parameters when no signature anchor is found, should be in the
       // last path segment so skip them.
       continue;
     }
     if (!fixedBufferWrite(&new_path_seg_end, &new_path_seg_len_left, segment[i], strlen(segment[i]))) {
       TSError("insufficient space to copy into new_path_seg buffer.");
-      return NULL;
+      return nullptr ;
     }
     if (i != numtoks - 1) {
       if (!fixedBufferWrite(&new_path_seg_end, &new_path_seg_len_left, "/", 1)) {
         TSError("insufficient space to copy into new_path_seg buffer.");
-        return NULL;
+        return nullptr ;
       }
     }
   }
@@ -570,7 +580,7 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
   TSDebug(PLUGIN_NAME, "new_path_seg: %s", new_path_seg);
 
   // save the encoded signing parameter data
-  if (sig_anchor != NULL) { // a signature anchor string was found.
+  if (sig_anchor != nullptr ) { // a signature anchor string was found.
     if (strlen(sig_anchor) < signed_seg_len) {
       memcpy(signed_seg, sig_anchor, strlen(sig_anchor));
     } else {
@@ -581,14 +591,14 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
       memcpy(signed_seg, segment[numtoks - 2], strlen(segment[numtoks - 2]));
     } else {
       TSError("insufficient space to copy into new_path_seg buffer.");
-      return NULL;
+      return nullptr ;
     }
   }
   TSDebug(PLUGIN_NAME, "signed_seg: %s", signed_seg);
 
   // no signature anchor was found so decode and save the signing parameters assumed
   // to be in the last path segment.
-  if (sig_anchor == NULL) {
+  if (sig_anchor == nullptr ) {
     if (TSBase64Decode(segment[numtoks - 2], strlen(segment[numtoks - 2]), decoded_string, sizeof(decoded_string), &decoded_len) !=
         TS_SUCCESS) {
       TSDebug(PLUGIN_NAME, "Unable to decode the  path parameter string.");
@@ -605,7 +615,7 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
 
     for (i = 0; i < numtoks; i++) {
       // cp the base64 decoded string.
-      if (i == sig_anchor_seg && sig_anchor != NULL) {
+      if (i == sig_anchor_seg && sig_anchor != nullptr ) {
         if (!fixedBufferWrite(&new_url_end, &new_url_len_left, segment[i], strlen(segment[i]))) {
           oob = 1;
           break;
@@ -620,7 +630,7 @@ urlParse(char const *const url_in, char *anchor, char *new_path_seg, int new_pat
         }
 
         continue;
-      } else if (i == numtoks - 2 && sig_anchor == NULL) {
+      } else if (i == numtoks - 2 && sig_anchor == nullptr ) {
         if (!fixedBufferWrite(&new_url_end, &new_url_len_left, (char *)decoded_string, strlen((char *)decoded_string))) {
           oob = 1;
           break;
@@ -734,9 +744,9 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
   const char *query = strchr(url, '?');
 
   // check for path params.
-  if (query == NULL || strstr(query, "timestamp=") == NULL) {
+  if (query == nullptr || strstr(query, "timestamp=") == nullptr ) {
     char *const parsed = urlParse(url, cfg->sig_anchor, new_path, 8192, path_params, 8192);
-    if (parsed == NULL) {
+    if (parsed == nullptr ) {
       err_log(url, "Unable to parse/decode new url path parameters");
       goto deny;
     }
@@ -744,7 +754,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
     has_path_params = true;
     query           = strstr(parsed, ";");
 
-    if (query == NULL) {
+    if (query == nullptr ) {
       err_log(url, "Has no signing query string or signing path parameters.");
       TSfree(parsed);
       goto deny;
@@ -765,11 +775,11 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
 
   // Client IP - this one is optional
   const char *cp = strstr(query, CIP_QSTRING "=");
-  const char *pp = NULL;
-  if (cp != NULL) {
+  const char *pp = nullptr ;
+  if (cp != nullptr ) {
     cp += (strlen(CIP_QSTRING) + 1);
     struct sockaddr const *ip = TSHttpTxnClientAddrGet(txnp);
-    if (ip == NULL) {
+    if (ip == nullptr ) {
       TSError("Can't get client ip address.");
       goto deny;
     } else {
@@ -819,9 +829,9 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
   // Expiration
   if (!cfg->ignore_expiry) {
     cp = strstr(query, EXP_QSTRING "=");
-    if (cp != NULL) {
+    if (cp != nullptr ) {
       cp += strlen(EXP_QSTRING) + 1;
-      if (sscanf(cp, "%" SCNu64, &expiration) != 1 || (time_t)expiration < time(NULL)) {
+      if (sscanf(cp, "%" SCNu64, &expiration) != 1 || (time_t)expiration < time(nullptr )) {
         err_log(url, "Invalid expiration, or expired");
         goto deny;
       }
@@ -833,7 +843,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
   }
   // Algorithm
   cp = strstr(query, ALG_QSTRING "=");
-  if (cp != NULL) {
+  if (cp != nullptr ) {
     cp += strlen(ALG_QSTRING) + 1;
     algorithm = atoi(cp);
     // The check for a valid algorithm is later.
@@ -848,7 +858,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
   }
   // Key index
   cp = strstr(query, KIN_QSTRING "=");
-  if (cp != NULL) {
+  if (cp != nullptr ) {
     cp += strlen(KIN_QSTRING) + 1;
     keyindex = atoi(cp);
     if (keyindex < 0 || keyindex >= MAX_KEY_NUM || 0 == cfg->keys[keyindex][0]) {
@@ -865,11 +875,11 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
     TSDebug(PLUGIN_NAME, "Key Index default: %d", keyindex);
   }
   // Parts
-  const char *parts = NULL;
+  const char *parts = nullptr ;
   cp                = strstr(query, PAR_QSTRING "=");
-  if (cp != NULL) {
+  if (cp != nullptr ) {
     cp += strlen(PAR_QSTRING) + 1;
-    parts = cp; // NOTE parts is not NULL terminated it is terminated by "&" of next param
+    parts = cp; // NOTE parts is not nullptr terminated it is terminated by "&" of next param
     has_path_params == false ? (cp = strstr(parts, "&")) : (cp = strstr(parts, ";"));
     if (cp) {
       TSDebug(PLUGIN_NAME, "Parts: %.*s", (int)(cp - parts), parts);
@@ -877,7 +887,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
       TSDebug(PLUGIN_NAME, "Parts: %s", parts);
     }
   } else {
-    if (cfg->use_parts != NULL) {
+    if (cfg->use_parts != nullptr ) {
       TSDebug(PLUGIN_NAME, "Use parts: %s", cfg->use_parts);
       parts = cfg->use_parts;
     } else {
@@ -891,9 +901,9 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
     }
   }
   // And finally, the sig (has to be last)
-  const char *signature = NULL;
+  const char *signature = nullptr ;
   cp                    = strstr(query, SIG_QSTRING "=");
-  if (cp != NULL) {
+  if (cp != nullptr ) {
     cp += strlen(SIG_QSTRING) + 1;
     signature = cp;
     if ((algorithm == USIG_HMAC_SHA1 && strlen(signature) < SHA1_SIG_SIZE) ||
@@ -922,7 +932,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
   char *strtok_r_p;
 
   const char *part = strtok_r(urltokstr, "/", &strtok_r_p);
-  while (part != NULL) {
+  while (part != nullptr ) {
     if (parts[j] == '1') {
       strncat(signed_part, part, sizeof(signed_part) - strlen(signed_part) - 1);
       strncat(signed_part, "/", sizeof(signed_part) - strlen(signed_part) - 1);
@@ -931,7 +941,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
         parts[j + 1] == '1') { // This remembers the last part, meaning, if there are no more valid letters in parts
       j++;                     // will keep repeating the value of the last one
     }
-    part = strtok_r(NULL, "/", &strtok_r_p);
+    part = strtok_r(nullptr, "/", &strtok_r_p);
   }
 
   // chop off the last /, replace with '?' or ';' as appropriate.
@@ -941,7 +951,7 @@ TSRemapDoRemap(void *ih, TSHttpTxn txnp, TSRemapRequestInfo *rri)
   for (int i = 0; i < cfg->paramNum; i++) {
     TSDebug(PLUGIN_NAME, "Hash parameter %d: %s", i, cfg->hash_query_param[i]);
     query_params[i] = strstr(query, cfg->hash_query_param[i]);
-    if (query_params[i] == NULL) {
+    if (query_params[i] == nullptr ) {
       err_log(url, "Missing hash parameter");
       goto deny;
     }
@@ -1036,8 +1046,8 @@ allow:
   }
   TSDebug(PLUGIN_NAME, "Current URL %s", current_url);
   const char *current_query = strchr(current_url, '?');
-  const char *app_qry       = NULL;
-  if (current_query != NULL) {
+  const char *app_qry       = nullptr ;
+  if (current_query != nullptr ) {
     current_query++;
     app_qry = getAppQueryString(cfg, current_query, strlen(current_query), current_url);
     TSDebug(PLUGIN_NAME, "Current query: %s", app_qry);
@@ -1047,17 +1057,17 @@ allow:
     if (*new_path) {
       TSUrlPathSet(rri->requestBufp, rri->requestUrl, new_path, strlen(new_path));
     }
-    TSUrlHttpParamsSet(rri->requestBufp, rri->requestUrl, NULL, 0);
+    TSUrlHttpParamsSet(rri->requestBufp, rri->requestUrl, nullptr, 0);
   }
 
   TSfree((void *)current_url);
 
   /* drop the query string so we can cache-hit */
-  if (app_qry != NULL) {
+  if (app_qry != nullptr ) {
     rval = TSUrlHttpQuerySet(rri->requestBufp, rri->requestUrl, app_qry, strlen(app_qry));
     TSfree((void *)app_qry);
   } else {
-    rval = TSUrlHttpQuerySet(rri->requestBufp, rri->requestUrl, NULL, 0);
+    rval = TSUrlHttpQuerySet(rri->requestBufp, rri->requestUrl, nullptr, 0);
   }
   if (rval != TS_SUCCESS) {
     TSError("[url_sig] Error setting the query string: %d", rval);

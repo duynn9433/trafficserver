@@ -16,11 +16,11 @@
 
 TSXS?=tsxs
 
-all:	url_sig.c
-	$(TSXS) -v -o url_sig.so $?
+all:	url_sig.cc
+	/home/vtn-duynn22/opt/trafficserver/bin/tsxs -v -o url_sig.so $?
 
 install:
-	$(TSXS) -i -o url_sig.so
+	/home/vtn-duynn22/opt/trafficserver/bin/tsxs -i -o url_sig.so
 
 clean:
 	rm -f *.lo *.so
