@@ -53,3 +53,6 @@
 
 #define USIG_HMAC_SHA1 1
 #define USIG_HMAC_MD5 2
+
+
+static const char PLUGIN_NAME[] = "url_sig";

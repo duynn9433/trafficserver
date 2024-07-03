@@ -55,7 +55,6 @@
 
 using namespace std;
 
-static const char PLUGIN_NAME[] = "url_sig";
 
 struct config {
   TSHttpStatus err_status;

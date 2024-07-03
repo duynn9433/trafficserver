@@ -1,0 +1,276 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.7"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "ats",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "clang-format::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-clang-format-Debug-7848a0be70d9d568fa02.json",
+					"name" : "clang-format",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "iocore::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-iocore-Debug-6c8b4d02f78577c5e2d4.json",
+					"name" : "iocore",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "logging::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-logging-Debug-1535c82e76b6cb648d1b.json",
+					"name" : "logging",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "mgmt::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-mgmt-Debug-fddbce8c20dd3e60d3b8.json",
+					"name" : "mgmt",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "plugins::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-plugins-Debug-59fc18864a0223899452.json",
+					"name" : "plugins",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "proxy::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-proxy-Debug-cdf96e64f0fa3afa61fd.json",
+					"name" : "proxy",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "records::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-records-Debug-125ae32f90c66fa548b8.json",
+					"name" : "records",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_librecords::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_librecords-Debug-762efb4fec919cd1ab7c.json",
+					"name" : "test_librecords",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_tscore::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_tscore-Debug-e403273b881d490e660e.json",
+					"name" : "test_tscore",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_tsutil::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_tsutil-Debug-3022dda231c3850daf31.json",
+					"name" : "test_tsutil",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_cache_tool::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_cache_tool-Debug-d4a4b507e93e236f4538.json",
+					"name" : "traffic_cache_tool",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_crashlog::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_crashlog-Debug-c468de13c9f4fd51ea30.json",
+					"name" : "traffic_crashlog",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_ctl::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_ctl-Debug-a25537c1dfdf92b6dcf9.json",
+					"name" : "traffic_ctl",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_layout::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_layout-Debug-7461a788401cd77026a1.json",
+					"name" : "traffic_layout",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_logcat::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_logcat-Debug-f335b6cfd4928e2192c4.json",
+					"name" : "traffic_logcat",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_logstats::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_logstats-Debug-ad4d824c2865575e79ad.json",
+					"name" : "traffic_logstats",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_manager::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_manager-Debug-324ac3bd1d260715a89e.json",
+					"name" : "traffic_manager",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_server::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_server-Debug-de01b0e91f18c621b09e.json",
+					"name" : "traffic_server",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_top::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_top-Debug-9ae2d58c55d115b92b97.json",
+					"name" : "traffic_top",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_via::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_via-Debug-a4d3d059e6717a02c288.json",
+					"name" : "traffic_via",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "traffic_wccp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-traffic_wccp-Debug-aef7917a2c1fe240f8f9.json",
+					"name" : "traffic_wccp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tscore::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tscore-Debug-010696726de382fff6df.json",
+					"name" : "tscore",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tscppapi::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tscppapi-Debug-8aa4c81d635bd5680e5a.json",
+					"name" : "tscppapi",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tscpputil::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tscpputil-Debug-ebf1d8876b0c435f464d.json",
+					"name" : "tscpputil",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "wccp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-wccp-Debug-c4c9e489ee76e01150ad.json",
+					"name" : "wccp",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/vtn-duynn22/Github/trafficserver/build",
+		"source" : "/home/vtn-duynn22/Github/trafficserver"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

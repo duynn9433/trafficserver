@@ -44,7 +44,8 @@ _TSfree(void *ptr)
 }
 
 void
-TSDebug(const char *tag, const char *fmt, ...)
+
+(const char *tag, const char *fmt, ...)
 {
   va_list args;
 
